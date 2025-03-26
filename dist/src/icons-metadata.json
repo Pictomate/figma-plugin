@@ -1,7 +1,70 @@
 {
-  "lastUpdated": "2025-03-26T18:54:26.246Z",
-  "totalCount": 7,
+  "lastUpdated": "2025-03-26T18:57:54.537Z",
+  "totalCount": 14,
   "icons": [
+    {
+      "id": "card-regular",
+      "name": "card-regular",
+      "categories": [
+        "Finance"
+      ],
+      "tags": [],
+      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Finance/card-regular.svg"
+    },
+    {
+      "id": "cash-arrow-down-regular",
+      "name": "cash-arrow-down-regular",
+      "categories": [
+        "Finance"
+      ],
+      "tags": [],
+      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Finance/cash-arrow-down-regular.svg"
+    },
+    {
+      "id": "cash-arrow-up-regular",
+      "name": "cash-arrow-up-regular",
+      "categories": [
+        "Finance"
+      ],
+      "tags": [],
+      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Finance/cash-arrow-up-regular.svg"
+    },
+    {
+      "id": "cash-regular",
+      "name": "cash-regular",
+      "categories": [
+        "Finance"
+      ],
+      "tags": [],
+      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Finance/cash-regular.svg"
+    },
+    {
+      "id": "cash-stack-regular",
+      "name": "cash-stack-regular",
+      "categories": [
+        "Finance"
+      ],
+      "tags": [],
+      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Finance/cash-stack-regular.svg"
+    },
+    {
+      "id": "wallet-coin-regular",
+      "name": "wallet-coin-regular",
+      "categories": [
+        "Finance"
+      ],
+      "tags": [],
+      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Finance/wallet-coin-regular.svg"
+    },
+    {
+      "id": "wallet-regular",
+      "name": "wallet-regular",
+      "categories": [
+        "Finance"
+      ],
+      "tags": [],
+      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Finance/wallet-regular.svg"
+    },
     {
       "id": "home",
       "name": "home",
