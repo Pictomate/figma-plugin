@@ -5,19 +5,21 @@ const CopyPlugin = require('copy-webpack-plugin');
 module.exports = {
   mode: 'development',
   
-  // Tylko kod pluginu
+  // Wejściowy plik pluginu
   entry: {
     code: './src/code.ts',
   },
   
+  // Obsługiwane rozszerzenia plików
   resolve: {
     extensions: ['.ts', '.js'],
   },
   
+  // Konfiguracja wyjścia
   output: {
     filename: '[name].js',
-    path: path.resolve(__dirname, 'dist'),
-    clean: true,
+    path: path.resolve(__dirname, 'dist'), // Katalog wyjściowy dla zbudowanego pluginu
+    clean: true, // Czyści katalog dist przed budowaniem
     environment: {
       arrowFunction: false,
       bigIntLiteral: false,
@@ -29,6 +31,7 @@ module.exports = {
     }
   },
   
+  // Konfiguracja przetwarzania plików
   module: {
     rules: [
       {
@@ -47,25 +50,44 @@ module.exports = {
     ],
   },
   
+  // Wtyczki używane podczas budowania
   plugins: [
+    // Generuje plik HTML dla interfejsu pluginu
     new HtmlWebpackPlugin({
       template: './src/ui/ui.html',
       filename: 'ui.html',
       inject: false
     }),
-    // Kopiuje plik icons-metadata.json do katalogu src/
-    // Po uruchomieniu `npm run generate-icons` i przed budowaniem
+    
+    // Kopiuje pliki ikon i metadanych do katalogu dist
+    // Dzięki temu pliki będą dostępne pod adresem URL: https://twoja-aplikacja.vercel.app/icons/...
     new CopyPlugin({
       patterns: [
+        // Kopiuje cały katalog icons do dist/icons
+        { 
+          from: 'icons',
+          to: 'icons',
+          globOptions: {
+            ignore: ['**/.DS_Store', '**/.gitkeep']  // Ignoruje pliki systemowe
+          }
+        },
+        // Kopiuje plik icons-metadata.json do katalogu dist
+        { 
+          from: 'icons-metadata.json', 
+          to: 'icons-metadata.json',
+          noErrorOnMissing: true 
+        },
+        // Kopiuje również plik icons-metadata.json do katalogu src dla użycia podczas developmentu
         { 
           from: 'icons-metadata.json', 
           to: 'src/icons-metadata.json',
           noErrorOnMissing: true 
-        },
+        }
       ],
     }),
   ],
   
+  // Wyłącza minimalizację kodu dla lepszej czytelności
   optimization: {
     minimize: false
   },
