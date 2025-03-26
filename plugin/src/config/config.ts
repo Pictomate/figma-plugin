@@ -3,10 +3,10 @@
  */
 
 // Adresy URL dla wersji produkcyjnej i developerskiej
-const DEV_ICON_URL = 'http://localhost:3000/icons';
+const DEV_ICON_URL = 'https://localhost:3000/icons';
 const PROD_ICON_URL = 'https://figma-plugin-indol.vercel.app/icons';
 
-const DEV_METADATA_URL = 'http://localhost:3000/icons-metadata.json';
+const DEV_METADATA_URL = 'https://localhost:3000/icons-metadata.json';
 const PROD_METADATA_URL = 'https://figma-plugin-indol.vercel.app/icons-metadata.json';
 
 // Wskazuje, czy plugin działa w trybie developerskim czy produkcyjnym
@@ -30,6 +30,11 @@ export const ICONS_METADATA_URL = IS_DEVELOPMENT ? DEV_METADATA_URL : PROD_METAD
  *    - Dokładny URL, z którego pobierane są metadane
  *    - Status odpowiedzi i nagłówki (w tym CORS)
  *    - Zawartość pobranych danych
+ * 
+ * UWAGA: HTTPS WYMAGANE!
+ * Figma wymaga, aby wszystkie żądania zewnętrzne były wykonywane przez HTTPS.
+ * Korzystanie z HTTP spowoduje błędy "Mixed Content", ponieważ Figma działa w środowisku HTTPS.
+ * Nawet w trybie deweloperskim wszystkie URL powinny używać HTTPS.
  */
 
 // Ustawienia dotyczące paginacji i lazy loadingu

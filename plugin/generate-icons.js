@@ -11,7 +11,17 @@ const path = require('path');
 // Configuration
 const ICONS_DIR = path.join(__dirname, '..', 'assets', 'icons');
 const OUTPUT_FILE = path.join(__dirname, '..', 'assets', 'icons-metadata.json');
-const BASE_URL = process.env.BASE_URL || 'https://figma-icon-plugin.vercel.app/';
+
+// UWAGA: Zawsze używaj HTTPS!
+// Figma wymaga, aby wszystkie zewnętrzne zasoby były ładowane przez HTTPS.
+// Korzystanie z HTTP spowoduje błędy "Mixed Content" w konsoli Figma.
+const BASE_URL = process.env.BASE_URL || 'https://figma-plugin-indol.vercel.app/';
+
+// Upewnij się, że BASE_URL zawsze używa HTTPS
+if (!BASE_URL.startsWith('https://')) {
+  console.warn('⚠️ UWAGA: BASE_URL powinien używać protokołu HTTPS dla zgodności z Figma!');
+  console.warn('   Wszystkie URLe do ikon będą prefixowane "https://" zamiast "http://"');
+}
 
 /**
  * Recursively finds all SVG files in a directory
@@ -62,12 +72,19 @@ function generateMetadata(svgFiles) {
     const dirPath = path.dirname(file.relativePath);
     const categories = dirPath === '.' ? [] : [path.basename(dirPath)];
     
+    // Zapewnij, że URL zawsze używa HTTPS
+    let svgUrl = `${BASE_URL}icons/${file.relativePath}`;
+    if (svgUrl.startsWith('http://')) {
+      svgUrl = svgUrl.replace('http://', 'https://');
+      console.log(`Zmieniono URL ikony ${id} na HTTPS: ${svgUrl}`);
+    }
+    
     return {
       id,
       name: id, // Same as id for now
       categories,
       tags: [],
-      svgUrl: `${BASE_URL}icons/${file.relativePath}`
+      svgUrl
     };
   });
 }

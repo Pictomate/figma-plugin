@@ -69,6 +69,8 @@ figma.skipInvisibleInstanceChildren = true;
  */
 console.log('Plugin starting...');
 console.log('Icons metadata URL:', config_1.ICONS_METADATA_URL);
+// Test bezpośredniego dostępu do pliku icons-metadata.json bez parametrów
+testDirectFetch();
 /**
  * Ustawienia rozmiaru UI
  */
@@ -120,7 +122,7 @@ function insertIcons(icons, color) {
                     startX = center.x + (windowSize.width / 2 / zoom) + 20;
                     startY = center.y - (windowSize.height / 2 / zoom);
                     _loop_1 = function (i) {
-                        var icon, timestamp, svgUrl, svgResponse, svgHeaders_1, svgText, node, frame, paths, _i, paths_1, path, row, col, error_1, fallbackFrame, fallbackNode, vectorPath, row, col;
+                        var icon, timestamp, svgUrl, svgResponse, svgHeaders_1, svgContentType, svgText, node, frame, paths, _i, paths_1, path, row, col, error_1, fallbackFrame, fallbackNode, vectorPath, row, col;
                         return __generator(this, function (_b) {
                             switch (_b.label) {
                                 case 0:
@@ -132,14 +134,23 @@ function insertIcons(icons, color) {
                                     if (!icon.svgUrl) {
                                         throw new Error("SVG URL is missing for icon ".concat(icon.name));
                                     }
+                                    // Sprawdź czy URL używa HTTPS
+                                    if (icon.svgUrl.startsWith('http://')) {
+                                        console.warn("\u26A0\uFE0F B\u0141\u0104D: URL ikony ".concat(icon.name, " u\u017Cywa HTTP zamiast HTTPS!"));
+                                        console.warn("   Oryginalny URL: ".concat(icon.svgUrl));
+                                        console.warn("   Figma blokuje zasoby z HTTP (Mixed Content Error).");
+                                        // Spróbuj naprawić URL zamieniając http na https
+                                        icon.svgUrl = icon.svgUrl.replace('http://', 'https://');
+                                        console.warn("   Pr\u00F3ba naprawy URL: ".concat(icon.svgUrl));
+                                    }
                                     timestamp = Date.now();
                                     svgUrl = icon.svgUrl + '?v=' + timestamp;
                                     console.log("Pobieranie ikony [".concat(icon.name, "] z: ").concat(svgUrl));
-                                    console.log("Timestamp: ".concat(timestamp));
                                     // Weryfikacja URL
                                     if (!svgUrl.includes('figma-plugin-indol.vercel.app')) {
                                         console.warn("\u26A0\uFE0F UWAGA: URL ikony ".concat(icon.name, " nie zawiera oczekiwanej domeny figma-plugin-indol.vercel.app!"));
                                         console.warn("   Aktualny URL: ".concat(svgUrl));
+                                        console.warn("   Sprawd\u017A czy w pliku icons-metadata.json s\u0105 poprawne URL-e.");
                                     }
                                     return [4 /*yield*/, fetch(svgUrl)];
                                 case 2:
@@ -148,27 +159,45 @@ function insertIcons(icons, color) {
                                     console.log("Szczeg\u00F3\u0142y odpowiedzi SVG dla ".concat(icon.name, ":"));
                                     console.log("- Status: ".concat(svgResponse.status, " ").concat(svgResponse.statusText));
                                     console.log("- URL: ".concat(svgResponse.url));
+                                    console.log("- Type: ".concat(svgResponse.type));
                                     svgHeaders_1 = {};
                                     svgResponse.headers.forEach(function (value, key) {
                                         console.log("  ".concat(key, ": ").concat(value));
                                         svgHeaders_1[key.toLowerCase()] = value;
                                     });
+                                    svgContentType = svgHeaders_1['content-type'] || '';
+                                    if (!svgContentType.includes('svg') && !svgContentType.includes('xml')) {
+                                        console.warn("\u26A0\uFE0F UWAGA: Niepoprawny Content-Type dla ikony ".concat(icon.name, ": ").concat(svgContentType));
+                                        console.warn('Oczekiwano image/svg+xml lub text/xml - to może powodować błędy rendering');
+                                    }
                                     // Sprawdzamy czy nagłówek CORS istnieje
                                     if (!svgHeaders_1['access-control-allow-origin']) {
                                         console.warn("\u26A0\uFE0F UWAGA: Brak nag\u0142\u00F3wka CORS dla ikony ".concat(icon.name, "!"));
+                                        console.warn('Sprawdź konfigurację Vercel - plik vercel.json powinien zawierać nagłówek "Access-Control-Allow-Origin": "*"');
                                     }
                                     else {
                                         console.log("\u2705 Nag\u0142\u00F3wek CORS dla ikony ".concat(icon.name, " jest obecny."));
                                     }
                                     if (!svgResponse.ok) {
-                                        throw new Error("Failed to fetch SVG from ".concat(svgUrl));
+                                        throw new Error("B\u0142\u0105d pobierania SVG: ".concat(svgResponse.status, " ").concat(svgResponse.statusText, " - URL: ").concat(svgUrl));
                                     }
                                     return [4 /*yield*/, svgResponse.text()];
                                 case 3:
                                     svgText = _b.sent();
+                                    // Sprawdzamy, czy odpowiedź jest pusta
+                                    if (!svgText || svgText.trim() === '') {
+                                        console.error("\u26A0\uFE0F B\u0141\u0104D: Otrzymano pust\u0105 odpowied\u017A SVG dla ikony ".concat(icon.name, "!"));
+                                        throw new Error("Otrzymano pust\u0105 odpowied\u017A SVG dla ikony ".concat(icon.name));
+                                    }
+                                    // Sprawdzamy czy otrzymano HTML zamiast SVG
+                                    if (svgText.trim().startsWith('<!DOCTYPE html>') || svgText.trim().startsWith('<html')) {
+                                        console.error("\u26A0\uFE0F B\u0141\u0104D: Otrzymano HTML zamiast SVG dla ikony ".concat(icon.name, "!"));
+                                        console.error('Pierwsze 100 znaków:', svgText.substring(0, 100));
+                                        throw new Error("Otrzymano HTML zamiast SVG dla ikony ".concat(icon.name));
+                                    }
                                     // Wyświetl początek zawartości SVG
                                     console.log("Zawarto\u015B\u0107 SVG (pierwsze 100 znak\u00F3w):");
-                                    console.log(svgText.substring(0, 100) + (svgText.length > 100 ? '...' : ''));
+                                    console.log(JSON.stringify(svgText.substring(0, 100)) + (svgText.length > 100 ? '...' : ''));
                                     node = figma.createNodeFromSvg(svgText);
                                     frame = figma.createFrame();
                                     frame.name = icon.name;
@@ -266,13 +295,22 @@ function insertIcons(icons, color) {
  */
 function fetchIconsMetadata() {
     return __awaiter(this, void 0, void 0, function () {
-        var timestamp, url, response, headers_1, responseText, data, error_2;
+        var timestamp, url, response, headers_1, contentType, responseText, data, error_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 3, , 4]);
                     timestamp = Date.now();
                     url = config_1.ICONS_METADATA_URL + '?v=' + timestamp;
+                    // Sprawdź czy URL używa HTTPS - Figma wymaga HTTPS
+                    if (url.startsWith('http://')) {
+                        console.warn('⚠️ BŁĄD: URL metadanych używa HTTP zamiast HTTPS!');
+                        console.warn("   Oryginalny URL: ".concat(url));
+                        console.warn('   Figma blokuje żądania HTTP (Mixed Content Error).');
+                        // Spróbuj naprawić URL zamieniając http na https
+                        url = url.replace('http://', 'https://');
+                        console.warn("   Pr\u00F3ba naprawy URL: ".concat(url));
+                    }
                     console.log("Pobieranie metadanych ikon z: ".concat(url));
                     console.log("Timestamp: ".concat(timestamp, ", Data: ").concat(new Date(timestamp).toISOString()));
                     return [4 /*yield*/, fetch(url)];
@@ -281,19 +319,32 @@ function fetchIconsMetadata() {
                     console.log('Szczegóły odpowiedzi HTTP:');
                     console.log("- Status: ".concat(response.status, " ").concat(response.statusText));
                     console.log("- URL: ".concat(response.url));
-                    console.log('- Nagłówki odpowiedzi:');
-                    headers_1 = {};
-                    response.headers.forEach(function (value, key) {
-                        console.log("  ".concat(key, ": ").concat(value));
-                        headers_1[key.toLowerCase()] = value;
-                    });
-                    // Sprawdzamy czy nagłówek CORS istnieje
-                    if (!headers_1['access-control-allow-origin']) {
-                        console.warn('⚠️ UWAGA: Brak nagłówka CORS "Access-Control-Allow-Origin" w odpowiedzi!');
-                        console.log('To może być przyczyna błędu CORS. Sprawdź konfigurację serwera Vercel.');
+                    console.log("- Type: ".concat(response.type));
+                    // DIAGNOSTYKA: Sprawdzamy czy headers istnieje przed użyciem forEach
+                    if (!response.headers) {
+                        console.error('⚠️ BŁĄD: response.headers jest undefined!');
                     }
                     else {
-                        console.log('✅ Nagłówek CORS "Access-Control-Allow-Origin" jest obecny w odpowiedzi.');
+                        console.log('- Nagłówki odpowiedzi:');
+                        headers_1 = {};
+                        response.headers.forEach(function (value, key) {
+                            console.log("  ".concat(key, ": ").concat(value));
+                            headers_1[key.toLowerCase()] = value;
+                        });
+                        contentType = headers_1['content-type'] || '';
+                        console.log("Content-Type odpowiedzi: ".concat(contentType));
+                        if (!contentType.includes('application/json')) {
+                            console.warn("\u26A0\uFE0F UWAGA: Niepoprawny Content-Type: ".concat(contentType));
+                            console.warn('Oczekiwano application/json - to może powodować błąd parsowania');
+                        }
+                        // Sprawdzamy czy nagłówek CORS istnieje
+                        if (!headers_1['access-control-allow-origin']) {
+                            console.warn('⚠️ UWAGA: Brak nagłówka CORS "Access-Control-Allow-Origin" w odpowiedzi!');
+                            console.log('To może być przyczyna błędu CORS. Sprawdź konfigurację serwera Vercel.');
+                        }
+                        else {
+                            console.log('✅ Nagłówek CORS "Access-Control-Allow-Origin" jest obecny w odpowiedzi.');
+                        }
                     }
                     if (!response.ok) {
                         throw new Error("B\u0142\u0105d pobierania metadanych: ".concat(response.status, " ").concat(response.statusText));
@@ -301,16 +352,59 @@ function fetchIconsMetadata() {
                     return [4 /*yield*/, response.text()];
                 case 2:
                     responseText = _a.sent();
-                    // Wyświetlamy początek odpowiedzi (max 500 znaków)
-                    console.log('Treść odpowiedzi (pierwsze 500 znaków):');
-                    console.log(responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
+                    // DIAGNOSTYKA: Wyświetlamy surowy tekst odpowiedzi przed parsowaniem JSON
+                    console.log('📦 DIAGNOSTYKA - Treść surowej odpowiedzi (pierwsze 200 znaków):');
+                    console.log(responseText.substring(0, 200));
+                    // Sprawdzamy, czy odpowiedź nie jest pusta
+                    if (!responseText || responseText.trim() === '') {
+                        console.error('⚠️ BŁĄD: Otrzymano pustą odpowiedź!');
+                        throw new Error('Otrzymano pustą odpowiedź od serwera');
+                    }
+                    // Sprawdzamy czy pierwszym znakiem jest '<' (HTML), co powoduje błąd
+                    if (responseText.trim().startsWith('<')) {
+                        console.error('⚠️ BŁĄD: Otrzymano HTML zamiast JSON!');
+                        console.error('Pierwsze 50 znaków odpowiedzi:');
+                        console.error(responseText.substring(0, 50));
+                        throw new Error('Otrzymano HTML zamiast JSON. Sprawdź przekierowania lub błędy serwera.');
+                    }
                     data = void 0;
                     try {
                         data = JSON.parse(responseText);
+                        console.log('📦 DIAGNOSTYKA - Struktura sparsowanych danych JSON:', JSON.stringify(data).substring(0, 100));
                     }
                     catch (jsonError) {
                         console.error('Błąd parsowania JSON:', jsonError);
+                        console.error('Pierwsze 100 znaków odpowiedzi:', JSON.stringify(responseText.substring(0, 100)));
                         throw new Error('Otrzymane dane nie są poprawnym formatem JSON');
+                    }
+                    // Sprawdzamy, czy data istnieje
+                    if (!data) {
+                        console.error('⚠️ BŁĄD: Po parsowaniu JSON otrzymano null lub undefined!');
+                        throw new Error('Po parsowaniu JSON otrzymano null lub undefined');
+                    }
+                    // Sprawdzamy, czy data.icons istnieje i jest tablicą
+                    if (!data.icons) {
+                        console.error('⚠️ BŁĄD: Brak pola "icons" w strukturze JSON!');
+                        console.error('Otrzymana struktura:', JSON.stringify(data).substring(0, 200) + '...');
+                        throw new Error('Brak pola "icons" w strukturze JSON');
+                    }
+                    if (!Array.isArray(data.icons)) {
+                        console.error('⚠️ BŁĄD: Pole "icons" nie jest tablicą!');
+                        console.error('Typ pola icons:', typeof data.icons);
+                        console.error('Zawartość pola icons:', data.icons);
+                        throw new Error('Pole "icons" nie jest tablicą');
+                    }
+                    // Sprawdzam, czy icons jest pustą tablicą
+                    if (data.icons.length === 0) {
+                        console.warn('⚠️ UWAGA: Tablica ikon jest pusta!');
+                    }
+                    // Sprawdzam obecność kategorii - to nie jest krytyczne, ale warto wiedzieć
+                    console.log('📦 DIAGNOSTYKA - Czy istnieje pole categories:', data.categories !== undefined);
+                    if (data.categories !== undefined && !Array.isArray(data.categories)) {
+                        console.warn('⚠️ UWAGA: Pole "categories" nie jest tablicą!');
+                        console.warn('Typ pola categories:', typeof data.categories);
+                        // Inicjalizujemy jako pustą tablicę, aby uniknąć błędu forEach
+                        data.categories = [];
                     }
                     console.log('Pobrano metadane ikon:', {
                         lastUpdated: data.lastUpdated,
@@ -326,6 +420,8 @@ function fetchIconsMetadata() {
                 case 3:
                     error_2 = _a.sent();
                     console.error('Błąd podczas pobierania metadanych ikon:', error_2);
+                    // Dodajemy powiadomienie Figma o błędzie
+                    figma.notify('Błąd pobierania metadanych ikon. Sprawdź konsolę.', { error: true });
                     throw error_2;
                 case 4: return [2 /*return*/];
             }
@@ -354,8 +450,29 @@ figma.ui.onmessage = function (msg) { return __awaiter(void 0, void 0, void 0, f
                 return [4 /*yield*/, fetchIconsMetadata()];
             case 3:
                 iconsMetadata = _b.sent();
-                icons = iconsMetadata.icons;
-                categories = iconsMetadata.categories || [];
+                // WAŻNE: Sprawdzamy czy iconsMetadata i jego pola istnieją przed wysłaniem do UI
+                if (!iconsMetadata) {
+                    throw new Error('Metadane ikon są puste (null/undefined)');
+                }
+                icons = [];
+                if (iconsMetadata.icons && Array.isArray(iconsMetadata.icons)) {
+                    icons = iconsMetadata.icons;
+                }
+                else {
+                    console.error('⚠️ BŁĄD: iconsMetadata.icons jest undefined lub nie jest tablicą');
+                    console.error('iconsMetadata:', iconsMetadata);
+                }
+                categories = [];
+                if (iconsMetadata.categories && Array.isArray(iconsMetadata.categories)) {
+                    categories = iconsMetadata.categories;
+                }
+                else {
+                    console.log('ℹ️ INFO: iconsMetadata.categories jest undefined lub nie jest tablicą, używam pustej tablicy');
+                }
+                console.log('📦 DIAGNOSTYKA - Wysyłanie do UI:', {
+                    iconsCount: icons.length,
+                    categoriesCount: categories.length
+                });
                 // Wyślij dane do UI
                 figma.ui.postMessage({
                     type: types_1.MessageType.INIT_DATA,
@@ -406,6 +523,118 @@ figma.ui.onmessage = function (msg) { return __awaiter(void 0, void 0, void 0, f
         }
     });
 }); };
+/**
+ * Prosty test dostępu do pliku icons-metadata.json
+ * bez parametrów cache-busting, aby sprawdzić czy problem jest z cache
+ */
+function testDirectFetch() {
+    return __awaiter(this, void 0, void 0, function () {
+        var directUrl, testResponse, contentType, testText, jsonData, error_5;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 3, , 4]);
+                    directUrl = 'https://figma-plugin-indol.vercel.app/icons-metadata.json';
+                    // Sprawdź czy URL używa HTTPS
+                    if (directUrl.startsWith('http://')) {
+                        console.warn('⚠️ BŁĄD: URL testu używa HTTP zamiast HTTPS!');
+                        console.warn("   Oryginalny URL: ".concat(directUrl));
+                        console.warn('   Figma blokuje żądania HTTP (Mixed Content Error).');
+                        // Spróbuj naprawić URL zamieniając http na https
+                        directUrl = directUrl.replace('http://', 'https://');
+                        console.warn("   Pr\u00F3ba naprawy URL: ".concat(directUrl));
+                    }
+                    console.log("\u2699\uFE0F TEST: Bezpo\u015Bredni fetch z: ".concat(directUrl));
+                    return [4 /*yield*/, fetch(directUrl)];
+                case 1:
+                    testResponse = _a.sent();
+                    console.log("\u2699\uFE0F TEST: Status: ".concat(testResponse.status, " ").concat(testResponse.statusText));
+                    console.log("\u2699\uFE0F TEST: URL: ".concat(testResponse.url));
+                    console.log("\u2699\uFE0F TEST: Type: ".concat(testResponse.type));
+                    // DIAGNOSTYKA: Sprawdzamy czy headers istnieje przed użyciem forEach
+                    if (!testResponse.headers) {
+                        console.error('⚙️ TEST: ⚠️ BŁĄD: testResponse.headers jest undefined!');
+                    }
+                    else {
+                        // Wyświetlamy wszystkie nagłówki odpowiedzi
+                        console.log('⚙️ TEST: Nagłówki odpowiedzi:');
+                        testResponse.headers.forEach(function (value, key) {
+                            console.log("  ".concat(key, ": ").concat(value));
+                        });
+                        contentType = testResponse.headers.get('content-type');
+                        console.log("\u2699\uFE0F TEST: Content-Type: ".concat(contentType));
+                    }
+                    if (!testResponse.ok) {
+                        console.error("\u2699\uFE0F TEST: B\u0142\u0105d HTTP - ".concat(testResponse.status, " ").concat(testResponse.statusText));
+                        return [2 /*return*/];
+                    }
+                    return [4 /*yield*/, testResponse.text()];
+                case 2:
+                    testText = _a.sent();
+                    // DIAGNOSTYKA: Wyświetlamy surowy tekst odpowiedzi
+                    console.log('⚙️ TEST: 📦 DIAGNOSTYKA - Surowy tekst odpowiedzi (pierwsze 200 znaków):');
+                    console.log(testText.substring(0, 200));
+                    // Sprawdzamy czy odpowiedź jest pusta
+                    if (!testText || testText.trim() === '') {
+                        console.error('⚙️ TEST: Otrzymano pustą odpowiedź!');
+                        return [2 /*return*/];
+                    }
+                    console.log("\u2699\uFE0F TEST: Wielko\u015B\u0107 odpowiedzi: ".concat(testText.length, " znak\u00F3w"));
+                    // Sprawdźmy, czy to jest HTML czy JSON
+                    if (testText.trim().startsWith('<')) {
+                        console.error('⚙️ TEST: Otrzymano HTML zamiast JSON w teście bezpośrednim!');
+                        console.error('⚙️ TEST: Pierwsze 100 znaków:', testText.substring(0, 100));
+                    }
+                    else {
+                        console.log('⚙️ TEST: Otrzymano prawdopodobnie poprawny JSON');
+                        // Spróbujmy sparsować JSON
+                        try {
+                            jsonData = JSON.parse(testText);
+                            console.log('⚙️ TEST: Parsowanie JSON powiodło się');
+                            // DIAGNOSTYKA: Sprawdzamy dokładnie strukturę danych
+                            console.log('⚙️ TEST: 📦 DIAGNOSTYKA - Pełna struktura danych:', jsonData);
+                            // Sprawdzamy czy ikony istnieją i są tablicą
+                            if (!jsonData.icons) {
+                                console.error('⚙️ TEST: ⚠️ BŁĄD: Brak pola "icons" w strukturze JSON!');
+                            }
+                            else if (!Array.isArray(jsonData.icons)) {
+                                console.error('⚙️ TEST: ⚠️ BŁĄD: Pole "icons" nie jest tablicą!');
+                                console.error('⚙️ TEST: Typ pola icons:', typeof jsonData.icons);
+                            }
+                            else {
+                                console.log('⚙️ TEST: ✅ Pole "icons" jest tablicą z', jsonData.icons.length, 'elementami');
+                                if (jsonData.icons.length > 0) {
+                                    console.log('⚙️ TEST: Przykładowa ikona:', jsonData.icons[0]);
+                                }
+                            }
+                            // Sprawdzamy czy categories istnieją i są tablicą
+                            if (jsonData.categories === undefined) {
+                                console.log('⚙️ TEST: ℹ️ INFO: Brak pola "categories" w strukturze JSON');
+                            }
+                            else if (!Array.isArray(jsonData.categories)) {
+                                console.warn('⚙️ TEST: ⚠️ UWAGA: Pole "categories" nie jest tablicą!');
+                                console.warn('⚙️ TEST: Typ pola categories:', typeof jsonData.categories);
+                            }
+                            else {
+                                console.log('⚙️ TEST: ✅ Pole "categories" jest tablicą z', jsonData.categories.length, 'elementami');
+                            }
+                            console.log('⚙️ TEST: Struktura danych:', jsonData.icons ? "Znaleziono ".concat(jsonData.icons.length, " ikon") : 'Brak ikon', jsonData.categories ? "Znaleziono ".concat(jsonData.categories.length, " kategorii") : 'Brak kategorii', jsonData.lastUpdated ? "Ostatnia aktualizacja: ".concat(jsonData.lastUpdated) : 'Brak daty aktualizacji');
+                        }
+                        catch (parseError) {
+                            console.error('⚙️ TEST: Błąd parsowania JSON:', parseError);
+                            console.error('⚙️ TEST: Pierwsze 100 znaków tekstu:', testText.substring(0, 100));
+                        }
+                    }
+                    return [3 /*break*/, 4];
+                case 3:
+                    error_5 = _a.sent();
+                    console.error('⚙️ TEST: Błąd podczas testu bezpośredniego fetch:', error_5);
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
 
 
 /***/ }),
@@ -450,9 +679,9 @@ var MessageType;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DEFAULT_ICON_COLOR = exports.DEFAULT_ICON_SIZE = exports.INITIAL_LOAD_LIMIT = exports.ICONS_PER_PAGE = exports.ICONS_METADATA_URL = exports.BASE_ICON_URL = exports.IS_DEVELOPMENT = void 0;
 // Adresy URL dla wersji produkcyjnej i developerskiej
-var DEV_ICON_URL = 'http://localhost:3000/icons';
+var DEV_ICON_URL = 'https://localhost:3000/icons';
 var PROD_ICON_URL = 'https://figma-plugin-indol.vercel.app/icons';
-var DEV_METADATA_URL = 'http://localhost:3000/icons-metadata.json';
+var DEV_METADATA_URL = 'https://localhost:3000/icons-metadata.json';
 var PROD_METADATA_URL = 'https://figma-plugin-indol.vercel.app/icons-metadata.json';
 // Wskazuje, czy plugin działa w trybie developerskim czy produkcyjnym
 exports.IS_DEVELOPMENT = false;
@@ -472,6 +701,11 @@ exports.ICONS_METADATA_URL = exports.IS_DEVELOPMENT ? DEV_METADATA_URL : PROD_ME
  *    - Dokładny URL, z którego pobierane są metadane
  *    - Status odpowiedzi i nagłówki (w tym CORS)
  *    - Zawartość pobranych danych
+ *
+ * UWAGA: HTTPS WYMAGANE!
+ * Figma wymaga, aby wszystkie żądania zewnętrzne były wykonywane przez HTTPS.
+ * Korzystanie z HTTP spowoduje błędy "Mixed Content", ponieważ Figma działa w środowisku HTTPS.
+ * Nawet w trybie deweloperskim wszystkie URL powinny używać HTTPS.
  */
 // Ustawienia dotyczące paginacji i lazy loadingu
 exports.ICONS_PER_PAGE = 100;
