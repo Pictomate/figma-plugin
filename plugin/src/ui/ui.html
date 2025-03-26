@@ -889,108 +889,6 @@
       });
     }
 
-    // Funkcja do ładowania ikony SVG - pomocnicza funkcja, którą użyjemy przy renderowaniu
-    function loadIconSvg(icon, container) {
-      // Sprawdzanie czy URL istnieje
-      if (!icon.svgUrl) {
-        console.error(`⚠️ Brak URL dla ikony: ${icon.id || 'unknown'}`);
-        // Wstawienie domyślnej ikony błędu
-        container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="${state.color}"/>
-        </svg>`;
-        return;
-      }
-
-      // Naprawiamy problem podwójnego segmentu 'icons/icons/'
-      let fixedUrl = icon.svgUrl;
-      if (fixedUrl.includes('/icons/icons/')) {
-        const originalUrl = fixedUrl;
-        fixedUrl = fixedUrl.replace('/icons/icons/', '/icons/');
-        console.log(`🔄 UI: Poprawiono URL ikony z podwójnym segmentem:
-        - Przed: ${originalUrl}
-        - Po: ${fixedUrl}`);
-      }
-
-      // Upewnijmy się, że URL używa HTTPS
-      if (fixedUrl.startsWith('http://')) {
-        fixedUrl = fixedUrl.replace('http://', 'https://');
-        console.log(`🔄 UI: Zmieniono protokół z HTTP na HTTPS dla ikony ${icon.id}`);
-      }
-      
-      console.log(`📊 UI: Pobieranie SVG dla ikony ${icon.id} z URL:`, fixedUrl);
-      
-      // Pobieramy SVG jako tekst i wstawiamy go bezpośrednio
-      fetch(fixedUrl)
-        .then(response => {
-          console.log(`📊 UI: Status odpowiedzi dla ikony ${icon.id}: ${response.status}`);
-          
-          // Diagnostyka Content-Type
-          if (response.headers && typeof response.headers.get === 'function') {
-            const contentType = response.headers.get('Content-Type');
-            console.log(`📊 UI: Content-Type dla ikony ${icon.id}: ${contentType}`);
-            if (contentType && !contentType.includes('svg') && !contentType.includes('xml')) {
-              console.warn(`⚠️ UI: Niepoprawny Content-Type: ${contentType}`);
-            }
-          }
-          
-          if (!response.ok) {
-            console.error(`⚠️ UI: Błąd pobierania SVG dla ikony ${icon.id}: ${response.status} ${response.statusText}`);
-            throw new Error(`Failed to load SVG: ${response.status}`);
-          }
-          return response.text();
-        })
-        .then(svgText => {
-          // Sprawdzamy, czy otrzymaliśmy faktycznie SVG (zaczyna się od <svg)
-          if (!svgText.trim().startsWith('<svg')) {
-            console.error(`⚠️ UI: Otrzymano niepoprawny format SVG dla ikony ${icon.id}!`);
-            console.error(`⚠️ UI: Zawartość (pierwsze 50 znaków): ${svgText.substring(0, 50)}`);
-            throw new Error(`Invalid SVG format for icon ${icon.id}`);
-          }
-          
-          // Wstawiamy zawartość SVG
-          container.innerHTML = svgText;
-          
-          // Ustawienie koloru w SVG
-          const svgElement = container.querySelector('svg');
-          if (svgElement) {
-            // Ustawiamy wymiary, aby ikona była odpowiednio wyświetlana
-            svgElement.setAttribute('width', '24');
-            svgElement.setAttribute('height', '24');
-            svgElement.setAttribute('fill', state.color);
-            
-            // Ustawiamy kolor dla wszystkich elementów wewnątrz SVG
-            const elements = svgElement.querySelectorAll('*');
-            elements.forEach(element => {
-              if (!element.getAttribute('fill') || element.getAttribute('fill') === 'none') {
-                element.setAttribute('fill', state.color);
-              }
-            });
-            
-            // Dodatkowo zaktualizuj wszystkie path
-            const paths = svgElement.querySelectorAll('path');
-            paths.forEach(path => {
-              path.setAttribute('fill', state.color);
-            });
-          } else {
-            console.warn(`⚠️ UI: SVG wstawiony, ale nie znaleziono elementu <svg> dla ikony ${icon.id}`);
-          }
-        })
-        .catch(error => {
-          console.error(`⚠️ UI: Błąd ładowania SVG dla ikony ${icon.id}:`, error.message);
-          // Wstawienie domyślnej ikony błędu
-          container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="${state.color}"/>
-          </svg>`;
-        });
-    }
-
-    // Update state of insert button
-    function updateInsertButton() {
-      const count = state.selectedIcons.length;
-      insertButton.disabled = count === 0;
-      insertButton.textContent = count > 0 ? `Move ${count} icons to Figma` : 'Move to Figma';
-    }
-
     // Insert selected icons into Figma
     function insertSelectedIcons() {
       if (state.selectedIcons.length === 0) return;
@@ -1003,6 +901,173 @@
           color: state.color
         }
       }, '*');
+    }
+
+    /**
+     * DLACZEGO UŻYWAMY INLINE SVG ZAMIAST <img src="...">?
+     * 
+     * 1. Omijanie ograniczeń CORS: Figma działa w zabezpieczonym środowisku, gdzie żądania z tagów <img>
+     *    podlegają ścisłym restrykcjom CORS. Używając inline SVG (pobranie zawartości przez fetch 
+     *    i bezpośrednie wstawienie kodu SVG do DOM), możemy częściej omijać te ograniczenia.
+     * 
+     * 2. Lepsza kontrola nad stylami: Inline SVG pozwala nam bezpośrednio manipulować elementami SVG
+     *    poprzez DOM, co umożliwia łatwą zmianę kolorów, wymiarów i innych atrybutów.
+     * 
+     * 3. Łatwiejsze debugowanie: Możemy dokładnie śledzić, co się dzieje podczas pobierania SVG,
+     *    zobaczyć jego zawartość, statusy odpowiedzi HTTP i ewentualne problemy.
+     * 
+     * 4. Bezpieczniejsze dla Figma: Bezpośrednie wstawianie SVG minimalizuje problemy z Mixed Content,
+     *    które mogą wystąpić w środowisku Figma, zwłaszcza gdy zasoby są hostowane na zewnętrznych serwerach.
+     */
+
+    // Funkcja do ładowania ikony SVG - pomocnicza funkcja, którą użyjemy przy renderowaniu
+    function loadIconSvg(icon, container) {
+      // Sprawdzanie czy URL istnieje
+      if (!icon.svgUrl) {
+        console.error(`⚠️ Brak URL dla ikony: ${icon.id || 'unknown'}`);
+        insertFallbackIcon(container);
+        return;
+      }
+
+      // Poprawiamy URL i usuwamy podwójne ścieżki
+      let fixedUrl = correctSvgUrl(icon.svgUrl, icon.id);
+      
+      console.log(`📊 UI: Pobieranie SVG dla ikony ${icon.id} z URL:`, fixedUrl);
+      
+      // Pobieramy SVG jako tekst i wstawiamy go bezpośrednio (inline SVG)
+      fetch(fixedUrl)
+        .then(response => {
+          console.log(`📊 UI: Status odpowiedzi dla ikony ${icon.id}: ${response.status}`);
+          logResponseDetails(response, icon.id);
+          
+          if (!response.ok) {
+            throw new Error(`Failed to load SVG: ${response.status}`);
+          }
+          return response.text();
+        })
+        .then(svgText => {
+          // Sprawdzamy, czy otrzymaliśmy faktycznie SVG
+          if (!validateSvgContent(svgText, icon.id)) {
+            throw new Error(`Invalid SVG format for icon ${icon.id}`);
+          }
+          
+          // Wstawiamy zawartość SVG inline do DOM
+          container.innerHTML = svgText;
+          
+          // Dostosowujemy SVG - ustawiamy wymiary i kolory
+          const svgElement = container.querySelector('svg');
+          if (svgElement) {
+            applyStylingToSvg(svgElement, state.color);
+            console.log(`✅ UI: Ikona ${icon.id} wstawiona inline poprawnie`);
+          } else {
+            console.warn(`⚠️ UI: SVG wstawiony, ale nie znaleziono elementu <svg> dla ikony ${icon.id}`);
+          }
+        })
+        .catch(error => {
+          console.error(`⚠️ UI: Błąd ładowania SVG dla ikony ${icon.id}:`, error.message);
+          insertFallbackIcon(container);
+        });
+    }
+
+    // Funkcja pomocnicza do poprawiania URL ikon
+    function correctSvgUrl(url, iconId) {
+      let fixedUrl = url;
+      
+      // Naprawiamy problem podwójnego segmentu 'icons/icons/'
+      if (fixedUrl.includes('/icons/icons/')) {
+        const originalUrl = fixedUrl;
+        fixedUrl = fixedUrl.replace('/icons/icons/', '/icons/');
+        console.log(`🔄 UI: Poprawiono URL ikony ${iconId} z podwójnym segmentem:
+        - Przed: ${originalUrl}
+        - Po: ${fixedUrl}`);
+      }
+
+      // Upewniamy się, że URL używa HTTPS
+      if (fixedUrl.startsWith('http://')) {
+        fixedUrl = fixedUrl.replace('http://', 'https://');
+        console.log(`🔄 UI: Zmieniono protokół z HTTP na HTTPS dla ikony ${iconId}`);
+      }
+      
+      return fixedUrl;
+    }
+
+    // Funkcja pomocnicza do logowania szczegółów odpowiedzi
+    function logResponseDetails(response, iconId) {
+      // Diagnostyka Content-Type
+      if (response.headers && typeof response.headers.get === 'function') {
+        const contentType = response.headers.get('Content-Type');
+        console.log(`📊 UI: Content-Type dla ikony ${iconId}: ${contentType}`);
+        if (contentType && !contentType.includes('svg') && !contentType.includes('xml')) {
+          console.warn(`⚠️ UI: Niepoprawny Content-Type: ${contentType}`);
+        }
+      }
+      
+      // Log headers jeśli są dostępne
+      try {
+        const headers = {};
+        if (response.headers && typeof response.headers.forEach === 'function') {
+          response.headers.forEach((value, key) => {
+            headers[key] = value;
+          });
+          console.log(`📊 UI: Pełne nagłówki dla ikony ${iconId}:`, headers);
+        }
+      } catch (e) {
+        console.log(`⚠️ UI: Nie można odczytać nagłówków dla ikony ${iconId}:`, e.message);
+      }
+    }
+
+    // Funkcja pomocnicza do sprawdzania zawartości SVG
+    function validateSvgContent(svgText, iconId) {
+      if (!svgText || !svgText.trim()) {
+        console.error(`⚠️ UI: Otrzymano pustą odpowiedź dla ikony ${iconId}!`);
+        return false;
+      }
+      
+      if (!svgText.trim().startsWith('<svg')) {
+        console.error(`⚠️ UI: Otrzymano niepoprawny format SVG dla ikony ${iconId}!`);
+        console.error(`⚠️ UI: Zawartość (pierwsze 100 znaków): ${svgText.substring(0, 100)}`);
+        return false;
+      }
+      
+      console.log(`📊 UI: Poprawne SVG dla ikony ${iconId} (pierwsze 50 znaków): ${svgText.substring(0, 50)}...`);
+      return true;
+    }
+
+    // Funkcja pomocnicza do stosowania stylizacji do elementu SVG
+    function applyStylingToSvg(svgElement, color) {
+      // Ustawiamy wymiary
+      svgElement.setAttribute('width', '24');
+      svgElement.setAttribute('height', '24');
+      svgElement.setAttribute('fill', color);
+      
+      // Ustawiamy kolor dla wszystkich elementów wewnątrz SVG
+      const elements = svgElement.querySelectorAll('*');
+      elements.forEach(element => {
+        if (!element.getAttribute('fill') || element.getAttribute('fill') === 'none') {
+          element.setAttribute('fill', color);
+        }
+      });
+      
+      // Dodatkowo zaktualizuj wszystkie path
+      const paths = svgElement.querySelectorAll('path');
+      paths.forEach(path => {
+        path.setAttribute('fill', color);
+      });
+    }
+
+    // Funkcja wstawiająca awaryjną ikonę w przypadku błędu
+    function insertFallbackIcon(container) {
+      container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="${state.color}"/>
+      </svg>`;
+      console.log(`⚓ UI: Wstawiono awaryjną ikonę placeholder`);
+    }
+
+    // Update state of insert button
+    function updateInsertButton() {
+      const count = state.selectedIcons.length;
+      insertButton.disabled = count === 0;
+      insertButton.textContent = count > 0 ? `Move ${count} icons to Figma` : 'Move to Figma';
     }
   </script>
 </body>
