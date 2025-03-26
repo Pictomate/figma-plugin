@@ -120,7 +120,7 @@ function insertIcons(icons, color) {
                     startX = center.x + (windowSize.width / 2 / zoom) + 20;
                     startY = center.y - (windowSize.height / 2 / zoom);
                     _loop_1 = function (i) {
-                        var icon, svgUrl, svgResponse, svgHeaders_1, svgText, node, frame, paths, _i, paths_1, path, row, col, error_1, fallbackFrame, fallbackNode, vectorPath, row, col;
+                        var icon, timestamp, svgUrl, svgResponse, svgHeaders_1, svgText, node, frame, paths, _i, paths_1, path, row, col, error_1, fallbackFrame, fallbackNode, vectorPath, row, col;
                         return __generator(this, function (_b) {
                             switch (_b.label) {
                                 case 0:
@@ -132,21 +132,33 @@ function insertIcons(icons, color) {
                                     if (!icon.svgUrl) {
                                         throw new Error("SVG URL is missing for icon ".concat(icon.name));
                                     }
-                                    svgUrl = icon.svgUrl + '?v=' + Date.now();
-                                    console.log("Pobieranie ikony z: ".concat(svgUrl));
+                                    timestamp = Date.now();
+                                    svgUrl = icon.svgUrl + '?v=' + timestamp;
+                                    console.log("Pobieranie ikony [".concat(icon.name, "] z: ").concat(svgUrl));
+                                    console.log("Timestamp: ".concat(timestamp));
+                                    // Weryfikacja URL
+                                    if (!svgUrl.includes('figma-plugin-indol.vercel.app')) {
+                                        console.warn("\u26A0\uFE0F UWAGA: URL ikony ".concat(icon.name, " nie zawiera oczekiwanej domeny figma-plugin-indol.vercel.app!"));
+                                        console.warn("   Aktualny URL: ".concat(svgUrl));
+                                    }
                                     return [4 /*yield*/, fetch(svgUrl)];
                                 case 2:
                                     svgResponse = _b.sent();
                                     // Diagnostyka nagłówków CORS dla pliku SVG
                                     console.log("Szczeg\u00F3\u0142y odpowiedzi SVG dla ".concat(icon.name, ":"));
                                     console.log("- Status: ".concat(svgResponse.status, " ").concat(svgResponse.statusText));
+                                    console.log("- URL: ".concat(svgResponse.url));
                                     svgHeaders_1 = {};
                                     svgResponse.headers.forEach(function (value, key) {
+                                        console.log("  ".concat(key, ": ").concat(value));
                                         svgHeaders_1[key.toLowerCase()] = value;
                                     });
                                     // Sprawdzamy czy nagłówek CORS istnieje
                                     if (!svgHeaders_1['access-control-allow-origin']) {
                                         console.warn("\u26A0\uFE0F UWAGA: Brak nag\u0142\u00F3wka CORS dla ikony ".concat(icon.name, "!"));
+                                    }
+                                    else {
+                                        console.log("\u2705 Nag\u0142\u00F3wek CORS dla ikony ".concat(icon.name, " jest obecny."));
                                     }
                                     if (!svgResponse.ok) {
                                         throw new Error("Failed to fetch SVG from ".concat(svgUrl));
@@ -154,6 +166,9 @@ function insertIcons(icons, color) {
                                     return [4 /*yield*/, svgResponse.text()];
                                 case 3:
                                     svgText = _b.sent();
+                                    // Wyświetl początek zawartości SVG
+                                    console.log("Zawarto\u015B\u0107 SVG (pierwsze 100 znak\u00F3w):");
+                                    console.log(svgText.substring(0, 100) + (svgText.length > 100 ? '...' : ''));
                                     node = figma.createNodeFromSvg(svgText);
                                     frame = figma.createFrame();
                                     frame.name = icon.name;
@@ -251,13 +266,15 @@ function insertIcons(icons, color) {
  */
 function fetchIconsMetadata() {
     return __awaiter(this, void 0, void 0, function () {
-        var url, response, headers_1, data, error_2;
+        var timestamp, url, response, headers_1, responseText, data, error_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 3, , 4]);
-                    url = config_1.ICONS_METADATA_URL + '?v=' + Date.now();
+                    timestamp = Date.now();
+                    url = config_1.ICONS_METADATA_URL + '?v=' + timestamp;
                     console.log("Pobieranie metadanych ikon z: ".concat(url));
+                    console.log("Timestamp: ".concat(timestamp, ", Data: ").concat(new Date(timestamp).toISOString()));
                     return [4 /*yield*/, fetch(url)];
                 case 1:
                     response = _a.sent();
@@ -281,15 +298,30 @@ function fetchIconsMetadata() {
                     if (!response.ok) {
                         throw new Error("B\u0142\u0105d pobierania metadanych: ".concat(response.status, " ").concat(response.statusText));
                     }
-                    return [4 /*yield*/, response.json()];
+                    return [4 /*yield*/, response.text()];
                 case 2:
-                    data = _a.sent();
+                    responseText = _a.sent();
+                    // Wyświetlamy początek odpowiedzi (max 500 znaków)
+                    console.log('Treść odpowiedzi (pierwsze 500 znaków):');
+                    console.log(responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
+                    data = void 0;
+                    try {
+                        data = JSON.parse(responseText);
+                    }
+                    catch (jsonError) {
+                        console.error('Błąd parsowania JSON:', jsonError);
+                        throw new Error('Otrzymane dane nie są poprawnym formatem JSON');
+                    }
                     console.log('Pobrano metadane ikon:', {
                         lastUpdated: data.lastUpdated,
                         totalCount: data.totalCount,
                         categories: data.categories ? data.categories.length : 0,
                         icons: data.icons ? data.icons.length : 0
                     });
+                    // Wyświetl przykładową ikonę (jeśli istnieje)
+                    if (data.icons && data.icons.length > 0) {
+                        console.log('Przykładowa ikona:', data.icons[0]);
+                    }
                     return [2 /*return*/, data];
                 case 3:
                     error_2 = _a.sent();
@@ -419,9 +451,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DEFAULT_ICON_COLOR = exports.DEFAULT_ICON_SIZE = exports.INITIAL_LOAD_LIMIT = exports.ICONS_PER_PAGE = exports.ICONS_METADATA_URL = exports.BASE_ICON_URL = exports.IS_DEVELOPMENT = void 0;
 // Adresy URL dla wersji produkcyjnej i developerskiej
 var DEV_ICON_URL = 'http://localhost:3000/icons';
-var PROD_ICON_URL = 'https://figma-icon-plugin.vercel.app/icons';
+var PROD_ICON_URL = 'https://figma-plugin-indol.vercel.app/icons';
 var DEV_METADATA_URL = 'http://localhost:3000/icons-metadata.json';
-var PROD_METADATA_URL = 'https://figma-icon-plugin.vercel.app/icons-metadata.json';
+var PROD_METADATA_URL = 'https://figma-plugin-indol.vercel.app/icons-metadata.json';
 // Wskazuje, czy plugin działa w trybie developerskim czy produkcyjnym
 exports.IS_DEVELOPMENT = false;
 // Podstawowy URL dla zasobów ikon
@@ -432,6 +464,14 @@ exports.ICONS_METADATA_URL = exports.IS_DEVELOPMENT ? DEV_METADATA_URL : PROD_ME
  * INFORMACJA: Po uruchomieniu `npm run generate-icons`, metadane są generowane w folderze assets/ i hostowane na Vercel.
  * Plugin zawsze pobiera najnowsze metadane i ikony z adresu URL określonego w ICONS_METADATA_URL,
  * co umożliwia aktualizację ikon bez konieczności aktualizacji samego pluginu Figma.
+ *
+ * DEBUGOWANIE:
+ * 1. W Figma, otwórz menu Plugins > Development > Open Console
+ * 2. Uruchom plugin
+ * 3. W konsoli zobaczysz logi zawierające:
+ *    - Dokładny URL, z którego pobierane są metadane
+ *    - Status odpowiedzi i nagłówki (w tym CORS)
+ *    - Zawartość pobranych danych
  */
 // Ustawienia dotyczące paginacji i lazy loadingu
 exports.ICONS_PER_PAGE = 100;

@@ -4,10 +4,10 @@
 
 // Adresy URL dla wersji produkcyjnej i developerskiej
 const DEV_ICON_URL = 'http://localhost:3000/icons';
-const PROD_ICON_URL = 'https://figma-icon-plugin.vercel.app/icons';
+const PROD_ICON_URL = 'https://figma-plugin-indol.vercel.app/icons';
 
 const DEV_METADATA_URL = 'http://localhost:3000/icons-metadata.json';
-const PROD_METADATA_URL = 'https://figma-icon-plugin.vercel.app/icons-metadata.json';
+const PROD_METADATA_URL = 'https://figma-plugin-indol.vercel.app/icons-metadata.json';
 
 // Wskazuje, czy plugin działa w trybie developerskim czy produkcyjnym
 export const IS_DEVELOPMENT = false;
@@ -22,6 +22,14 @@ export const ICONS_METADATA_URL = IS_DEVELOPMENT ? DEV_METADATA_URL : PROD_METAD
  * INFORMACJA: Po uruchomieniu `npm run generate-icons`, metadane są generowane w folderze assets/ i hostowane na Vercel.
  * Plugin zawsze pobiera najnowsze metadane i ikony z adresu URL określonego w ICONS_METADATA_URL,
  * co umożliwia aktualizację ikon bez konieczności aktualizacji samego pluginu Figma.
+ * 
+ * DEBUGOWANIE:
+ * 1. W Figma, otwórz menu Plugins > Development > Open Console
+ * 2. Uruchom plugin
+ * 3. W konsoli zobaczysz logi zawierające:
+ *    - Dokładny URL, z którego pobierane są metadane
+ *    - Status odpowiedzi i nagłówki (w tym CORS)
+ *    - Zawartość pobranych danych
  */
 
 // Ustawienia dotyczące paginacji i lazy loadingu

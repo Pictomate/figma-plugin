@@ -99,24 +99,36 @@ async function insertIcons(icons: Icon[], color: string): Promise<void> {
       }
       
       // Dodaj parametr cache-busting dla adresu URL
-      const svgUrl = icon.svgUrl + '?v=' + Date.now();
-      console.log(`Pobieranie ikony z: ${svgUrl}`);
+      const timestamp = Date.now();
+      const svgUrl = icon.svgUrl + '?v=' + timestamp;
+      console.log(`Pobieranie ikony [${icon.name}] z: ${svgUrl}`);
+      console.log(`Timestamp: ${timestamp}`);
+      
+      // Weryfikacja URL
+      if (!svgUrl.includes('figma-plugin-indol.vercel.app')) {
+        console.warn(`⚠️ UWAGA: URL ikony ${icon.name} nie zawiera oczekiwanej domeny figma-plugin-indol.vercel.app!`);
+        console.warn(`   Aktualny URL: ${svgUrl}`);
+      }
       
       const svgResponse = await fetch(svgUrl);
       
       // Diagnostyka nagłówków CORS dla pliku SVG
       console.log(`Szczegóły odpowiedzi SVG dla ${icon.name}:`);
       console.log(`- Status: ${svgResponse.status} ${svgResponse.statusText}`);
+      console.log(`- URL: ${svgResponse.url}`);
       
       // Wyświetlamy nagłówki odpowiedzi dla SVG
       const svgHeaders: Record<string, string> = {};
       svgResponse.headers.forEach((value, key) => {
+        console.log(`  ${key}: ${value}`);
         svgHeaders[key.toLowerCase()] = value;
       });
       
       // Sprawdzamy czy nagłówek CORS istnieje
       if (!svgHeaders['access-control-allow-origin']) {
         console.warn(`⚠️ UWAGA: Brak nagłówka CORS dla ikony ${icon.name}!`);
+      } else {
+        console.log(`✅ Nagłówek CORS dla ikony ${icon.name} jest obecny.`);
       }
       
       if (!svgResponse.ok) {
@@ -124,6 +136,10 @@ async function insertIcons(icons: Icon[], color: string): Promise<void> {
       }
       
       const svgText = await svgResponse.text();
+      
+      // Wyświetl początek zawartości SVG
+      console.log(`Zawartość SVG (pierwsze 100 znaków):`);
+      console.log(svgText.substring(0, 100) + (svgText.length > 100 ? '...' : ''));
       
       // Utwórz node SVG z pobranego kodu
       const node = figma.createNodeFromSvg(svgText);
@@ -232,8 +248,10 @@ async function insertIcons(icons: Icon[], color: string): Promise<void> {
  */
 async function fetchIconsMetadata() {
   try {
-    const url = ICONS_METADATA_URL + '?v=' + Date.now(); // Dodajemy parametr cache-busting
+    const timestamp = Date.now();
+    const url = ICONS_METADATA_URL + '?v=' + timestamp; // Dodajemy parametr cache-busting
     console.log(`Pobieranie metadanych ikon z: ${url}`);
+    console.log(`Timestamp: ${timestamp}, Data: ${new Date(timestamp).toISOString()}`);
     
     // Dodajemy logowanie nagłówków do debugowania CORS
     const response = await fetch(url);
@@ -262,13 +280,33 @@ async function fetchIconsMetadata() {
       throw new Error(`Błąd pobierania metadanych: ${response.status} ${response.statusText}`);
     }
     
-    const data = await response.json();
+    // Pobieramy treść odpowiedzi jako tekst
+    const responseText = await response.text();
+    
+    // Wyświetlamy początek odpowiedzi (max 500 znaków)
+    console.log('Treść odpowiedzi (pierwsze 500 znaków):');
+    console.log(responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
+    
+    // Konwertujemy tekst na JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (jsonError) {
+      console.error('Błąd parsowania JSON:', jsonError);
+      throw new Error('Otrzymane dane nie są poprawnym formatem JSON');
+    }
+    
     console.log('Pobrano metadane ikon:', {
       lastUpdated: data.lastUpdated,
       totalCount: data.totalCount,
       categories: data.categories ? data.categories.length : 0,
       icons: data.icons ? data.icons.length : 0
     });
+    
+    // Wyświetl przykładową ikonę (jeśli istnieje)
+    if (data.icons && data.icons.length > 0) {
+      console.log('Przykładowa ikona:', data.icons[0]);
+    }
     
     return data;
   } catch (error) {
