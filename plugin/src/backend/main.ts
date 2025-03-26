@@ -93,15 +93,34 @@ async function insertIcons(icons: Icon[], color: string): Promise<void> {
     const icon = icons[i];
     
     try {
-      // Pobierz SVG z serwera
+      // Dodaj pobieranie SVG z serwera
       if (!icon.svgUrl) {
         throw new Error(`SVG URL is missing for icon ${icon.name}`);
       }
       
-      const svgResponse = await fetch(icon.svgUrl);
+      // Dodaj parametr cache-busting dla adresu URL
+      const svgUrl = icon.svgUrl + '?v=' + Date.now();
+      console.log(`Pobieranie ikony z: ${svgUrl}`);
+      
+      const svgResponse = await fetch(svgUrl);
+      
+      // Diagnostyka nagłówków CORS dla pliku SVG
+      console.log(`Szczegóły odpowiedzi SVG dla ${icon.name}:`);
+      console.log(`- Status: ${svgResponse.status} ${svgResponse.statusText}`);
+      
+      // Wyświetlamy nagłówki odpowiedzi dla SVG
+      const svgHeaders: Record<string, string> = {};
+      svgResponse.headers.forEach((value, key) => {
+        svgHeaders[key.toLowerCase()] = value;
+      });
+      
+      // Sprawdzamy czy nagłówek CORS istnieje
+      if (!svgHeaders['access-control-allow-origin']) {
+        console.warn(`⚠️ UWAGA: Brak nagłówka CORS dla ikony ${icon.name}!`);
+      }
       
       if (!svgResponse.ok) {
-        throw new Error(`Failed to fetch SVG from ${icon.svgUrl}`);
+        throw new Error(`Failed to fetch SVG from ${svgUrl}`);
       }
       
       const svgText = await svgResponse.text();
@@ -213,8 +232,31 @@ async function insertIcons(icons: Icon[], color: string): Promise<void> {
  */
 async function fetchIconsMetadata() {
   try {
-    console.log(`Pobieranie metadanych ikon z: ${ICONS_METADATA_URL}`);
-    const response = await fetch(ICONS_METADATA_URL);
+    const url = ICONS_METADATA_URL + '?v=' + Date.now(); // Dodajemy parametr cache-busting
+    console.log(`Pobieranie metadanych ikon z: ${url}`);
+    
+    // Dodajemy logowanie nagłówków do debugowania CORS
+    const response = await fetch(url);
+    
+    console.log('Szczegóły odpowiedzi HTTP:');
+    console.log(`- Status: ${response.status} ${response.statusText}`);
+    console.log(`- URL: ${response.url}`);
+    console.log('- Nagłówki odpowiedzi:');
+    
+    // Wyświetlamy wszystkie nagłówki odpowiedzi
+    const headers: Record<string, string> = {};
+    response.headers.forEach((value, key) => {
+      console.log(`  ${key}: ${value}`);
+      headers[key.toLowerCase()] = value;
+    });
+    
+    // Sprawdzamy czy nagłówek CORS istnieje
+    if (!headers['access-control-allow-origin']) {
+      console.warn('⚠️ UWAGA: Brak nagłówka CORS "Access-Control-Allow-Origin" w odpowiedzi!');
+      console.log('To może być przyczyna błędu CORS. Sprawdź konfigurację serwera Vercel.');
+    } else {
+      console.log('✅ Nagłówek CORS "Access-Control-Allow-Origin" jest obecny w odpowiedzi.');
+    }
     
     if (!response.ok) {
       throw new Error(`Błąd pobierania metadanych: ${response.status} ${response.statusText}`);
