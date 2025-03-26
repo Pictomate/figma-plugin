@@ -111,14 +111,24 @@ async function insertIcons(icons: Icon[], color: string): Promise<void> {
         console.warn(`   Próba naprawy URL: ${icon.svgUrl}`);
       }
       
+      // Popraw problem podwójnego segmentu 'icons/icons/' jeśli występuje
+      if (icon.svgUrl.includes('/icons/icons/')) {
+        const originalUrl = icon.svgUrl;
+        icon.svgUrl = icon.svgUrl.replace('/icons/icons/', '/icons/');
+        console.log(`🔄 Poprawiono URL z podwójnym segmentem 'icons': 
+        - Przed: ${originalUrl} 
+        - Po: ${icon.svgUrl}`);
+      }
+      
       // Dodaj parametr cache-busting dla adresu URL
       const timestamp = Date.now();
       const svgUrl = icon.svgUrl + '?v=' + timestamp;
-      console.log(`Pobieranie ikony [${icon.name}] z: ${svgUrl}`);
+      console.log(`📊 Finalny URL ikony [${icon.name}]: ${svgUrl}`);
       
       // Weryfikacja URL
-      if (!svgUrl.includes('figma-plugin-indol.vercel.app')) {
-        console.warn(`⚠️ UWAGA: URL ikony ${icon.name} nie zawiera oczekiwanej domeny figma-plugin-indol.vercel.app!`);
+      const expectedDomain = 'figma-plugin-indol.vercel.app';
+      if (!svgUrl.includes(expectedDomain)) {
+        console.warn(`⚠️ UWAGA: URL ikony ${icon.name} nie zawiera oczekiwanej domeny ${expectedDomain}!`);
         console.warn(`   Aktualny URL: ${svgUrl}`);
         console.warn(`   Sprawdź czy w pliku icons-metadata.json są poprawne URL-e.`);
       }
@@ -133,25 +143,36 @@ async function insertIcons(icons: Icon[], color: string): Promise<void> {
       console.log(`- Type: ${svgResponse.type}`);
       
       // Wyświetlamy nagłówki odpowiedzi dla SVG
-      const svgHeaders: Record<string, string> = {};
-      svgResponse.headers.forEach((value, key) => {
-        console.log(`  ${key}: ${value}`);
-        svgHeaders[key.toLowerCase()] = value;
-      });
-      
-      // Sprawdzamy Content-Type
-      const svgContentType = svgHeaders['content-type'] || '';
-      if (!svgContentType.includes('svg') && !svgContentType.includes('xml')) {
-        console.warn(`⚠️ UWAGA: Niepoprawny Content-Type dla ikony ${icon.name}: ${svgContentType}`);
-        console.warn('Oczekiwano image/svg+xml lub text/xml - to może powodować błędy rendering');
-      }
-      
-      // Sprawdzamy czy nagłówek CORS istnieje
-      if (!svgHeaders['access-control-allow-origin']) {
-        console.warn(`⚠️ UWAGA: Brak nagłówka CORS dla ikony ${icon.name}!`);
-        console.warn('Sprawdź konfigurację Vercel - plik vercel.json powinien zawierać nagłówek "Access-Control-Allow-Origin": "*"');
-      } else {
-        console.log(`✅ Nagłówek CORS dla ikony ${icon.name} jest obecny.`);
+      try {
+        if (svgResponse.headers && typeof svgResponse.headers.forEach === 'function') {
+          console.log('- Nagłówki odpowiedzi SVG:');
+          const svgHeaders: Record<string, string> = {};
+          
+          svgResponse.headers.forEach((value, key) => {
+            console.log(`  ${key}: ${value}`);
+            svgHeaders[key.toLowerCase()] = value;
+          });
+          
+          // Sprawdzamy Content-Type
+          const svgContentType = svgHeaders['content-type'] || '';
+          if (!svgContentType.includes('svg') && !svgContentType.includes('xml')) {
+            console.warn(`⚠️ UWAGA: Niepoprawny Content-Type dla ikony ${icon.name}: ${svgContentType}`);
+            console.warn('Oczekiwano image/svg+xml lub text/xml - to może powodować błędy rendering');
+            console.warn('Sprawdź konfigurację Vercel - plik vercel.json powinien zawierać: "source": "/icons/(.*)\\.svg", "headers": [{"key": "Content-Type", "value": "image/svg+xml"}]');
+          }
+          
+          // Sprawdzamy czy nagłówek CORS istnieje
+          if (!svgHeaders['access-control-allow-origin']) {
+            console.warn(`⚠️ UWAGA: Brak nagłówka CORS dla ikony ${icon.name}!`);
+            console.warn('Sprawdź konfigurację Vercel - plik vercel.json powinien zawierać: "source": "/icons/(.*)\\.svg", "headers": [{"key": "Access-Control-Allow-Origin", "value": "*"}]');
+          } else {
+            console.log(`✅ Nagłówek CORS dla ikony ${icon.name} jest obecny.`);
+          }
+        } else {
+          console.log('⚠️ UWAGA: svgResponse.headers jest undefined lub nie ma metody forEach');
+        }
+      } catch (headerError) {
+        console.warn('⚠️ UWAGA: Błąd podczas przetwarzania nagłówków SVG:', headerError);
       }
       
       if (!svgResponse.ok) {
@@ -171,6 +192,14 @@ async function insertIcons(icons: Icon[], color: string): Promise<void> {
         console.error(`⚠️ BŁĄD: Otrzymano HTML zamiast SVG dla ikony ${icon.name}!`);
         console.error('Pierwsze 100 znaków:', svgText.substring(0, 100));
         throw new Error(`Otrzymano HTML zamiast SVG dla ikony ${icon.name}`);
+      }
+      
+      // Sprawdzamy czy otrzymaliśmy poprawny SVG (czy zaczyna się od <svg) 
+      if (!svgText.trim().startsWith('<svg')) {
+        console.error(`⚠️ BŁĄD: Otrzymano niepoprawny format SVG dla ikony ${icon.name}!`);
+        console.error('Pierwsze 100 znaków:', svgText.substring(0, 100));
+        console.error('Sprawdź, czy plik SVG istnieje pod podanym URL i ma poprawny format.');
+        throw new Error(`Otrzymano niepoprawny format SVG dla ikony ${icon.name}`);
       }
       
       // Wyświetl początek zawartości SVG

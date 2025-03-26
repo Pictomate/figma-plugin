@@ -79,6 +79,27 @@ function generateMetadata(svgFiles) {
       console.log(`Zmieniono URL ikony ${id} na HTTPS: ${svgUrl}`);
     }
     
+    // Sprawdź, czy ścieżka nie zawiera podwójnego segmentu 'icons'
+    if (svgUrl.includes('/icons/icons/')) {
+      const originalUrl = svgUrl;
+      svgUrl = svgUrl.replace('/icons/icons/', '/icons/');
+      console.log(`Poprawiono URL z podwójnym segmentem 'icons' dla ikony ${id}:
+      - Przed: ${originalUrl}
+      - Po: ${svgUrl}`);
+    }
+    
+    // Sprawdź, czy URL kończy się na .svg 
+    if (!svgUrl.endsWith('.svg')) {
+      console.warn(`⚠️ UWAGA: URL dla ikony ${id} nie kończy się na .svg: ${svgUrl}`);
+    }
+    
+    // Sprawdź, czy używamy poprawnego protokołu
+    if (!svgUrl.startsWith('https://')) {
+      console.warn(`⚠️ UWAGA: URL dla ikony ${id} nie używa HTTPS: ${svgUrl}`);
+    }
+    
+    console.log(`✅ Wygenerowano URL dla ikony ${id}: ${svgUrl}`);
+    
     return {
       id,
       name: id, // Same as id for now
