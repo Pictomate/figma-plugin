@@ -98,7 +98,7 @@ function hexToRgb(hex) {
  */
 function insertIcons(icons, color) {
     return __awaiter(this, void 0, void 0, function () {
-        var iconSize, gap, cols, nodes, rgbColor, windowSize, zoom, center, startX, startY, i, icon, svgResponse, svgText, node, frame, paths, _i, paths_1, path, row, col, error_1, fallbackFrame, fallbackNode, vectorPath, row, col;
+        var iconSize, gap, cols, nodes, rgbColor, windowSize, zoom, center, startX, startY, _loop_1, i;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -119,99 +119,125 @@ function insertIcons(icons, color) {
                     center = figma.viewport.center;
                     startX = center.x + (windowSize.width / 2 / zoom) + 20;
                     startY = center.y - (windowSize.height / 2 / zoom);
+                    _loop_1 = function (i) {
+                        var icon, svgUrl, svgResponse, svgHeaders_1, svgText, node, frame, paths, _i, paths_1, path, row, col, error_1, fallbackFrame, fallbackNode, vectorPath, row, col;
+                        return __generator(this, function (_b) {
+                            switch (_b.label) {
+                                case 0:
+                                    icon = icons[i];
+                                    _b.label = 1;
+                                case 1:
+                                    _b.trys.push([1, 4, , 5]);
+                                    // Dodaj pobieranie SVG z serwera
+                                    if (!icon.svgUrl) {
+                                        throw new Error("SVG URL is missing for icon ".concat(icon.name));
+                                    }
+                                    svgUrl = icon.svgUrl + '?v=' + Date.now();
+                                    console.log("Pobieranie ikony z: ".concat(svgUrl));
+                                    return [4 /*yield*/, fetch(svgUrl)];
+                                case 2:
+                                    svgResponse = _b.sent();
+                                    // Diagnostyka nagłówków CORS dla pliku SVG
+                                    console.log("Szczeg\u00F3\u0142y odpowiedzi SVG dla ".concat(icon.name, ":"));
+                                    console.log("- Status: ".concat(svgResponse.status, " ").concat(svgResponse.statusText));
+                                    svgHeaders_1 = {};
+                                    svgResponse.headers.forEach(function (value, key) {
+                                        svgHeaders_1[key.toLowerCase()] = value;
+                                    });
+                                    // Sprawdzamy czy nagłówek CORS istnieje
+                                    if (!svgHeaders_1['access-control-allow-origin']) {
+                                        console.warn("\u26A0\uFE0F UWAGA: Brak nag\u0142\u00F3wka CORS dla ikony ".concat(icon.name, "!"));
+                                    }
+                                    if (!svgResponse.ok) {
+                                        throw new Error("Failed to fetch SVG from ".concat(svgUrl));
+                                    }
+                                    return [4 /*yield*/, svgResponse.text()];
+                                case 3:
+                                    svgText = _b.sent();
+                                    node = figma.createNodeFromSvg(svgText);
+                                    frame = figma.createFrame();
+                                    frame.name = icon.name;
+                                    frame.resize(iconSize, iconSize);
+                                    frame.fills = []; // Przezroczyste tło
+                                    // Ustaw nazwę ikony
+                                    node.name = "icon";
+                                    // Usuń tło
+                                    node.fills = [];
+                                    paths = node.findAll(function (n) { return n.type === 'VECTOR'; });
+                                    if (paths && paths.length > 0) {
+                                        for (_i = 0, paths_1 = paths; _i < paths_1.length; _i++) {
+                                            path = paths_1[_i];
+                                            if ('fills' in path) {
+                                                path.fills = [{
+                                                        type: 'SOLID',
+                                                        color: {
+                                                            r: rgbColor.r,
+                                                            g: rgbColor.g,
+                                                            b: rgbColor.b
+                                                        }
+                                                    }];
+                                            }
+                                        }
+                                    }
+                                    // Dopasuj rozmiar SVG do ramki
+                                    node.resize(iconSize, iconSize);
+                                    // Dodaj SVG do ramki
+                                    frame.appendChild(node);
+                                    row = Math.floor(i / cols);
+                                    col = i % cols;
+                                    frame.x = startX + col * (iconSize + gap);
+                                    frame.y = startY + row * (iconSize + gap);
+                                    // Dodaj do strony
+                                    figma.currentPage.appendChild(frame);
+                                    // Dodaj do tablicy nodeów
+                                    nodes.push(frame);
+                                    return [3 /*break*/, 5];
+                                case 4:
+                                    error_1 = _b.sent();
+                                    console.error("Error inserting icon ".concat(icon.name, ":"), error_1);
+                                    fallbackFrame = figma.createFrame();
+                                    fallbackFrame.name = icon.name + " (error)";
+                                    fallbackFrame.resize(iconSize, iconSize);
+                                    fallbackFrame.fills = []; // Przezroczyste tło
+                                    fallbackNode = figma.createNodeFromSvg("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\">\n          <path d=\"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z\"/>\n        </svg>");
+                                    vectorPath = fallbackNode.findOne(function (n) { return n.type === 'VECTOR'; });
+                                    if (vectorPath && 'fills' in vectorPath) {
+                                        vectorPath.fills = [{
+                                                type: 'SOLID',
+                                                color: {
+                                                    r: rgbColor.r,
+                                                    g: rgbColor.g,
+                                                    b: rgbColor.b
+                                                }
+                                            }];
+                                    }
+                                    // Dodaj do ramki
+                                    fallbackFrame.appendChild(fallbackNode);
+                                    row = Math.floor(i / cols);
+                                    col = i % cols;
+                                    fallbackFrame.x = startX + col * (iconSize + gap);
+                                    fallbackFrame.y = startY + row * (iconSize + gap);
+                                    // Dodaj do strony
+                                    figma.currentPage.appendChild(fallbackFrame);
+                                    // Dodaj do tablicy nodeów
+                                    nodes.push(fallbackFrame);
+                                    return [3 /*break*/, 5];
+                                case 5: return [2 /*return*/];
+                            }
+                        });
+                    };
                     i = 0;
                     _a.label = 1;
                 case 1:
-                    if (!(i < icons.length)) return [3 /*break*/, 7];
-                    icon = icons[i];
-                    _a.label = 2;
+                    if (!(i < icons.length)) return [3 /*break*/, 4];
+                    return [5 /*yield**/, _loop_1(i)];
                 case 2:
-                    _a.trys.push([2, 5, , 6]);
-                    // Pobierz SVG z serwera
-                    if (!icon.svgUrl) {
-                        throw new Error("SVG URL is missing for icon ".concat(icon.name));
-                    }
-                    return [4 /*yield*/, fetch(icon.svgUrl)];
+                    _a.sent();
+                    _a.label = 3;
                 case 3:
-                    svgResponse = _a.sent();
-                    if (!svgResponse.ok) {
-                        throw new Error("Failed to fetch SVG from ".concat(icon.svgUrl));
-                    }
-                    return [4 /*yield*/, svgResponse.text()];
-                case 4:
-                    svgText = _a.sent();
-                    node = figma.createNodeFromSvg(svgText);
-                    frame = figma.createFrame();
-                    frame.name = icon.name;
-                    frame.resize(iconSize, iconSize);
-                    frame.fills = []; // Przezroczyste tło
-                    // Ustaw nazwę ikony
-                    node.name = "icon";
-                    // Usuń tło
-                    node.fills = [];
-                    paths = node.findAll(function (n) { return n.type === 'VECTOR'; });
-                    if (paths && paths.length > 0) {
-                        for (_i = 0, paths_1 = paths; _i < paths_1.length; _i++) {
-                            path = paths_1[_i];
-                            if ('fills' in path) {
-                                path.fills = [{
-                                        type: 'SOLID',
-                                        color: {
-                                            r: rgbColor.r,
-                                            g: rgbColor.g,
-                                            b: rgbColor.b
-                                        }
-                                    }];
-                            }
-                        }
-                    }
-                    // Dopasuj rozmiar SVG do ramki
-                    node.resize(iconSize, iconSize);
-                    // Dodaj SVG do ramki
-                    frame.appendChild(node);
-                    row = Math.floor(i / cols);
-                    col = i % cols;
-                    frame.x = startX + col * (iconSize + gap);
-                    frame.y = startY + row * (iconSize + gap);
-                    // Dodaj do strony
-                    figma.currentPage.appendChild(frame);
-                    // Dodaj do tablicy nodeów
-                    nodes.push(frame);
-                    return [3 /*break*/, 6];
-                case 5:
-                    error_1 = _a.sent();
-                    console.error("Error inserting icon ".concat(icon.name, ":"), error_1);
-                    fallbackFrame = figma.createFrame();
-                    fallbackFrame.name = icon.name + " (error)";
-                    fallbackFrame.resize(iconSize, iconSize);
-                    fallbackFrame.fills = []; // Przezroczyste tło
-                    fallbackNode = figma.createNodeFromSvg("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\">\n          <path d=\"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z\"/>\n        </svg>");
-                    vectorPath = fallbackNode.findOne(function (n) { return n.type === 'VECTOR'; });
-                    if (vectorPath && 'fills' in vectorPath) {
-                        vectorPath.fills = [{
-                                type: 'SOLID',
-                                color: {
-                                    r: rgbColor.r,
-                                    g: rgbColor.g,
-                                    b: rgbColor.b
-                                }
-                            }];
-                    }
-                    // Dodaj do ramki
-                    fallbackFrame.appendChild(fallbackNode);
-                    row = Math.floor(i / cols);
-                    col = i % cols;
-                    fallbackFrame.x = startX + col * (iconSize + gap);
-                    fallbackFrame.y = startY + row * (iconSize + gap);
-                    // Dodaj do strony
-                    figma.currentPage.appendChild(fallbackFrame);
-                    // Dodaj do tablicy nodeów
-                    nodes.push(fallbackFrame);
-                    return [3 /*break*/, 6];
-                case 6:
                     i++;
                     return [3 /*break*/, 1];
-                case 7:
+                case 4:
                     // Wybierz wszystkie ikony
                     figma.currentPage.selection = nodes;
                     return [2 /*return*/];
@@ -225,15 +251,33 @@ function insertIcons(icons, color) {
  */
 function fetchIconsMetadata() {
     return __awaiter(this, void 0, void 0, function () {
-        var response, data, error_2;
+        var url, response, headers_1, data, error_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 3, , 4]);
-                    console.log("Pobieranie metadanych ikon z: ".concat(config_1.ICONS_METADATA_URL));
-                    return [4 /*yield*/, fetch(config_1.ICONS_METADATA_URL)];
+                    url = config_1.ICONS_METADATA_URL + '?v=' + Date.now();
+                    console.log("Pobieranie metadanych ikon z: ".concat(url));
+                    return [4 /*yield*/, fetch(url)];
                 case 1:
                     response = _a.sent();
+                    console.log('Szczegóły odpowiedzi HTTP:');
+                    console.log("- Status: ".concat(response.status, " ").concat(response.statusText));
+                    console.log("- URL: ".concat(response.url));
+                    console.log('- Nagłówki odpowiedzi:');
+                    headers_1 = {};
+                    response.headers.forEach(function (value, key) {
+                        console.log("  ".concat(key, ": ").concat(value));
+                        headers_1[key.toLowerCase()] = value;
+                    });
+                    // Sprawdzamy czy nagłówek CORS istnieje
+                    if (!headers_1['access-control-allow-origin']) {
+                        console.warn('⚠️ UWAGA: Brak nagłówka CORS "Access-Control-Allow-Origin" w odpowiedzi!');
+                        console.log('To może być przyczyna błędu CORS. Sprawdź konfigurację serwera Vercel.');
+                    }
+                    else {
+                        console.log('✅ Nagłówek CORS "Access-Control-Allow-Origin" jest obecny w odpowiedzi.');
+                    }
                     if (!response.ok) {
                         throw new Error("B\u0142\u0105d pobierania metadanych: ".concat(response.status, " ").concat(response.statusText));
                     }
