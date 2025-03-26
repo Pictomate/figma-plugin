@@ -1,5 +1,9 @@
 {
   "version": 2,
+  "rewrites": [
+    { "source": "/icons/(.*)", "destination": "/assets/icons/$1" },
+    { "source": "/icons-metadata.json", "destination": "/assets/icons-metadata.json" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -17,16 +21,6 @@
           "value": "X-Requested-With, Content-Type, Accept"
         }
       ]
-    }
-  ],
-  "routes": [
-    {
-      "src": "/icons/(.*)",
-      "dest": "/assets/icons/$1"
-    },
-    {
-      "src": "/icons-metadata.json",
-      "dest": "/assets/icons-metadata.json"
     }
   ]
 } 
