@@ -295,7 +295,7 @@ function insertIcons(icons, color) {
  */
 function fetchIconsMetadata() {
     return __awaiter(this, void 0, void 0, function () {
-        var timestamp, url, response, headers_1, contentType, responseText, data, error_2;
+        var timestamp, url, response, contentType, headers_1, responseText, data, allCategories_1, error_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -320,31 +320,44 @@ function fetchIconsMetadata() {
                     console.log("- Status: ".concat(response.status, " ").concat(response.statusText));
                     console.log("- URL: ".concat(response.url));
                     console.log("- Type: ".concat(response.type));
-                    // DIAGNOSTYKA: Sprawdzamy czy headers istnieje przed użyciem forEach
-                    if (!response.headers) {
-                        console.error('⚠️ BŁĄD: response.headers jest undefined!');
-                    }
-                    else {
-                        console.log('- Nagłówki odpowiedzi:');
-                        headers_1 = {};
-                        response.headers.forEach(function (value, key) {
-                            console.log("  ".concat(key, ": ").concat(value));
-                            headers_1[key.toLowerCase()] = value;
-                        });
-                        contentType = headers_1['content-type'] || '';
-                        console.log("Content-Type odpowiedzi: ".concat(contentType));
-                        if (!contentType.includes('application/json')) {
-                            console.warn("\u26A0\uFE0F UWAGA: Niepoprawny Content-Type: ".concat(contentType));
-                            console.warn('Oczekiwano application/json - to może powodować błąd parsowania');
-                        }
-                        // Sprawdzamy czy nagłówek CORS istnieje
-                        if (!headers_1['access-control-allow-origin']) {
-                            console.warn('⚠️ UWAGA: Brak nagłówka CORS "Access-Control-Allow-Origin" w odpowiedzi!');
-                            console.log('To może być przyczyna błędu CORS. Sprawdź konfigurację serwera Vercel.');
+                    contentType = null;
+                    headers_1 = {};
+                    // Bezpieczna obsługa nagłówków - ignorujemy błąd "headers jest undefined"
+                    try {
+                        if (response.headers) {
+                            console.log('- Nagłówki odpowiedzi:');
+                            // Bezpieczna obsługa nagłówków
+                            if (typeof response.headers.forEach === 'function') {
+                                response.headers.forEach(function (value, key) {
+                                    console.log("  ".concat(key, ": ").concat(value));
+                                    headers_1[key.toLowerCase()] = value;
+                                });
+                                // Sprawdzamy Content-Type
+                                contentType = headers_1['content-type'] || '';
+                                console.log("Content-Type odpowiedzi: ".concat(contentType));
+                                if (!contentType.includes('application/json')) {
+                                    console.warn("\u26A0\uFE0F UWAGA: Niepoprawny Content-Type: ".concat(contentType));
+                                    console.warn('Oczekiwano application/json - to może powodować błąd parsowania');
+                                }
+                                // Sprawdzamy czy nagłówek CORS istnieje
+                                if (!headers_1['access-control-allow-origin']) {
+                                    console.warn('⚠️ UWAGA: Brak nagłówka CORS "Access-Control-Allow-Origin" w odpowiedzi!');
+                                    console.log('To może być przyczyna błędu CORS. Sprawdź konfigurację serwera Vercel.');
+                                }
+                                else {
+                                    console.log('✅ Nagłówek CORS "Access-Control-Allow-Origin" jest obecny w odpowiedzi.');
+                                }
+                            }
+                            else {
+                                console.log('⚠️ UWAGA: Metoda forEach nie jest dostępna dla nagłówków');
+                            }
                         }
                         else {
-                            console.log('✅ Nagłówek CORS "Access-Control-Allow-Origin" jest obecny w odpowiedzi.');
+                            console.log('⚠️ UWAGA: response.headers jest undefined - typowe w środowisku Figma');
                         }
+                    }
+                    catch (headerError) {
+                        console.warn('⚠️ UWAGA: Błąd podczas przetwarzania nagłówków:', headerError);
                     }
                     if (!response.ok) {
                         throw new Error("B\u0142\u0105d pobierania metadanych: ".concat(response.status, " ").concat(response.statusText));
@@ -398,13 +411,52 @@ function fetchIconsMetadata() {
                     if (data.icons.length === 0) {
                         console.warn('⚠️ UWAGA: Tablica ikon jest pusta!');
                     }
-                    // Sprawdzam obecność kategorii - to nie jest krytyczne, ale warto wiedzieć
+                    // WAŻNE: Sprawdzamy i uzupełniamy brakujące pola w każdej ikonie
+                    console.log('📦 NAPRAWIANIE DANYCH: Uzupełnianie brakujących pól w ikonach...');
+                    data.icons = data.icons.map(function (icon) {
+                        if (!icon)
+                            return null;
+                        // Sprawdzamy i dodajemy puste tablice dla categories jeśli nie istnieją
+                        if (!icon.categories) {
+                            console.log("\uD83D\uDCE6 Ikona ".concat(icon.id || 'bez ID', ": dodaj\u0119 brakuj\u0105ce pole 'categories' jako pust\u0105 tablic\u0119"));
+                            icon.categories = [];
+                        }
+                        else if (!Array.isArray(icon.categories)) {
+                            console.warn("\u26A0\uFE0F UWAGA: Pole 'categories' ikony ".concat(icon.id || 'bez ID', " nie jest tablic\u0105! Typ:"), typeof icon.categories);
+                            icon.categories = Array.isArray(icon.categories) ? icon.categories : [];
+                        }
+                        // Sprawdzamy i dodajemy puste tablice dla tags jeśli nie istnieją
+                        if (!icon.tags) {
+                            icon.tags = [];
+                        }
+                        else if (!Array.isArray(icon.tags)) {
+                            console.warn("\u26A0\uFE0F UWAGA: Pole 'tags' ikony ".concat(icon.id || 'bez ID', " nie jest tablic\u0105! Typ:"), typeof icon.tags);
+                            icon.tags = Array.isArray(icon.tags) ? icon.tags : [];
+                        }
+                        return icon;
+                    }).filter(function (icon) { return icon !== null; }); // Usuwamy null
+                    // Sprawdzam obecność kategorii na poziomie głównym JSON - to nie jest krytyczne
                     console.log('📦 DIAGNOSTYKA - Czy istnieje pole categories:', data.categories !== undefined);
                     if (data.categories !== undefined && !Array.isArray(data.categories)) {
                         console.warn('⚠️ UWAGA: Pole "categories" nie jest tablicą!');
                         console.warn('Typ pola categories:', typeof data.categories);
                         // Inicjalizujemy jako pustą tablicę, aby uniknąć błędu forEach
                         data.categories = [];
+                    }
+                    // Jeśli categories nie istnieje, tworzymy go na podstawie kategorii ikon
+                    if (!data.categories || !Array.isArray(data.categories)) {
+                        console.log('📦 NAPRAWIANIE DANYCH: Tworzenie pola "categories" na podstawie kategorii ikon');
+                        allCategories_1 = new Set();
+                        data.icons.forEach(function (icon) {
+                            if (icon.categories && Array.isArray(icon.categories)) {
+                                icon.categories.forEach(function (category) {
+                                    if (category)
+                                        allCategories_1.add(category);
+                                });
+                            }
+                        });
+                        data.categories = Array.from(allCategories_1);
+                        console.log("\uD83D\uDCE6 Utworzono pole \"categories\" z ".concat(data.categories.length, " kategoriami"));
                     }
                     console.log('Pobrano metadane ikon:', {
                         lastUpdated: data.lastUpdated,
@@ -551,18 +603,32 @@ function testDirectFetch() {
                     console.log("\u2699\uFE0F TEST: Status: ".concat(testResponse.status, " ").concat(testResponse.statusText));
                     console.log("\u2699\uFE0F TEST: URL: ".concat(testResponse.url));
                     console.log("\u2699\uFE0F TEST: Type: ".concat(testResponse.type));
-                    // DIAGNOSTYKA: Sprawdzamy czy headers istnieje przed użyciem forEach
-                    if (!testResponse.headers) {
-                        console.error('⚙️ TEST: ⚠️ BŁĄD: testResponse.headers jest undefined!');
+                    contentType = null;
+                    // Ignorujemy błąd "response.headers jest undefined" i obsługujemy go bezpiecznie
+                    try {
+                        if (testResponse.headers) {
+                            console.log('⚙️ TEST: Nagłówki odpowiedzi:');
+                            // Bezpieczna obsługa nagłówków
+                            if (typeof testResponse.headers.forEach === 'function') {
+                                testResponse.headers.forEach(function (value, key) {
+                                    console.log("  ".concat(key, ": ").concat(value));
+                                });
+                            }
+                            else {
+                                console.log('⚙️ TEST: Metoda forEach nie jest dostępna dla nagłówków');
+                            }
+                            // Pobieramy Content-Type w bezpieczny sposób
+                            if (typeof testResponse.headers.get === 'function') {
+                                contentType = testResponse.headers.get('content-type');
+                                console.log("\u2699\uFE0F TEST: Content-Type: ".concat(contentType));
+                            }
+                        }
+                        else {
+                            console.log('⚙️ TEST: ⚠️ UWAGA: testResponse.headers jest undefined - typowe w środowisku Figma');
+                        }
                     }
-                    else {
-                        // Wyświetlamy wszystkie nagłówki odpowiedzi
-                        console.log('⚙️ TEST: Nagłówki odpowiedzi:');
-                        testResponse.headers.forEach(function (value, key) {
-                            console.log("  ".concat(key, ": ").concat(value));
-                        });
-                        contentType = testResponse.headers.get('content-type');
-                        console.log("\u2699\uFE0F TEST: Content-Type: ".concat(contentType));
+                    catch (headerError) {
+                        console.warn('⚙️ TEST: ⚠️ UWAGA: Błąd podczas przetwarzania nagłówków:', headerError);
                     }
                     if (!testResponse.ok) {
                         console.error("\u2699\uFE0F TEST: B\u0142\u0105d HTTP - ".concat(testResponse.status, " ").concat(testResponse.statusText));

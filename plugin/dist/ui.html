@@ -352,14 +352,78 @@
       }, '*');
       
       // Initialize event listeners
-      searchInput.addEventListener('input', handleSearchInput);
-      searchReset.addEventListener('click', resetSearch);
-      categorySelect.addEventListener('change', handleCategoryChange);
-      colorPicker.addEventListener('input', handleColorChange);
-      hexInput.addEventListener('input', handleHexInput);
-      hexReset.addEventListener('click', resetColor);
+      searchInput.addEventListener('input', function(e) {
+        // Implementacja funkcji handleSearchInput
+        state.filter.search = e.target.value.toLowerCase();
+        toggleResetButton(searchInput, searchInput.parentElement);
+        renderIcons();
+      });
+      
+      searchReset.addEventListener('click', function() {
+        // Implementacja funkcji resetSearch
+        searchInput.value = '';
+        state.filter.search = '';
+        toggleResetButton(searchInput, searchInput.parentElement);
+        renderIcons();
+      });
+      
+      categorySelect.addEventListener('change', function(e) {
+        // Implementacja funkcji handleCategoryChange
+        state.filter.category = e.target.value;
+        renderIcons();
+      });
+      
+      colorPicker.addEventListener('input', function(e) {
+        // Implementacja funkcji handleColorChange
+        const color = e.target.value;
+        console.log('Color picker changed to:', color);
+        state.color = color;
+        hexInput.value = color.substring(1);
+        toggleResetButton(hexInput, hexInput.parentElement, '000000');
+        setTimeout(() => { updateIconColors(); }, 10);
+      });
+      
+      hexInput.addEventListener('input', function(e) {
+        // Implementacja funkcji handleHexInput
+        let hex = e.target.value.replace(/[^0-9A-Fa-f]/g, '');
+        e.target.value = hex;
+        toggleResetButton(hexInput, hexInput.parentElement, '000000');
+        
+        if (hex.length > 0) {
+          while (hex.length < 6) {
+            hex += '0';
+          }
+          const newColor = '#' + hex;
+          console.log('Hex input changed to:', newColor);
+          state.color = newColor;
+          colorPicker.value = newColor;
+          setTimeout(() => { updateIconColors(); }, 10);
+        }
+      });
+      
+      hexReset.addEventListener('click', function() {
+        // Implementacja funkcji resetColor
+        const defaultColor = '#000000';
+        hexInput.value = '000000';
+        state.color = defaultColor;
+        colorPicker.value = defaultColor;
+        toggleResetButton(hexInput, hexInput.parentElement, '000000');
+        setTimeout(() => { updateIconColors(); }, 10);
+      });
+      
       insertButton.addEventListener('click', insertSelectedIcons);
-      selectAllCheckbox.addEventListener('change', handleSelectAll);
+      
+      selectAllCheckbox.addEventListener('change', function(e) {
+        // Implementacja funkcji handleSelectAll
+        const filteredIcons = getFilteredIcons();
+        if (e.target.checked) {
+          state.selectedIcons = [...filteredIcons];
+        } else {
+          state.selectedIcons = [];
+        }
+        renderIcons();
+        updateInsertButton();
+      });
       
       // Listen for messages from main thread
       window.onmessage = (event) => {
@@ -530,24 +594,79 @@
       });
     }
 
-    // Get icons filtered by search and category
+    // Initialize categories dropdown
+    function initializeCategories() {
+      // Sprawdzamy, czy tablica kategorii istnieje
+      if (!state.categories || !Array.isArray(state.categories)) {
+        console.error('⚠️ BŁĄD: state.categories nie jest tablicą!');
+        return;
+      }
+      
+      // Keep the "All Categories" option and clear the rest
+      categorySelect.innerHTML = '<option value="">All Categories</option>';
+      
+      // Add categories
+      if (state.categories.length > 0) {
+        state.categories.forEach(category => {
+          const option = document.createElement('option');
+          option.value = category;
+          option.textContent = category;
+          categorySelect.appendChild(option);
+        });
+      }
+    }
+    
+    // Helper function to filter icons based on current filters
     function getFilteredIcons() {
+      // Sprawdzamy, czy tablica ikon istnieje
+      if (!state.icons || !Array.isArray(state.icons)) {
+        console.error('⚠️ BŁĄD: state.icons nie jest tablicą w getFilteredIcons!');
+        return [];
+      }
+      
       return state.icons.filter(icon => {
-        // Filter by search
-        const matchesSearch = state.filter.search === '' || 
-          icon.name.toLowerCase().includes(state.filter.search) || 
-          icon.tags.some(tag => tag.toLowerCase().includes(state.filter.search));
-        
-        // Filter by category
-        const matchesCategory = state.filter.category === '' || 
-          icon.categories.includes(state.filter.category);
-        
-        return matchesSearch && matchesCategory;
+        try {
+          // Filter by category
+          if (state.filter.category) {
+            // Sprawdzamy, czy ikona ma pole categories i czy jest tablicą
+            if (!icon.categories || !Array.isArray(icon.categories)) {
+              console.log('ℹ️ INFO: Ikona', icon.id, 'nie ma pola categories lub nie jest ono tablicą');
+              return false;
+            }
+            
+            if (!icon.categories.includes(state.filter.category)) {
+              return false;
+            }
+          }
+          
+          // Filter by search
+          if (state.filter.search) {
+            const searchLower = state.filter.search.toLowerCase();
+            
+            // Sprawdzamy, czy ikona ma pole name
+            const nameMatch = icon.name && typeof icon.name === 'string' && 
+                            icon.name.toLowerCase().includes(searchLower);
+            
+            // Sprawdzamy, czy ikona ma pole tags i czy jest tablicą
+            const tagMatch = icon.tags && Array.isArray(icon.tags) && 
+                           icon.tags.some(tag => tag.toLowerCase().includes(searchLower));
+            
+            return nameMatch || tagMatch;
+          }
+          
+          // Jeśli nie ma filtrów, zwracamy true
+          return true;
+        } catch (error) {
+          console.error('⚠️ BŁĄD podczas filtrowania ikony:', icon, error);
+          return false;
+        }
       });
     }
 
     // Render icons in the grid
     function renderIcons() {
+      console.log('🔄 Renderowanie ikon - początek...');
+      
       // Sprawdzamy, czy tablica ikon istnieje i nie jest pusta
       if (!state.icons || !Array.isArray(state.icons)) {
         console.error('⚠️ BŁĄD: state.icons nie jest tablicą!');
@@ -555,23 +674,12 @@
         return;
       }
       
-      // Apply filters
-      const filteredIcons = state.icons.filter(icon => {
-        // Filter by category
-        if (state.filter.category && (!icon.categories || !icon.categories.includes(state.filter.category))) {
-          return false;
-        }
-        
-        // Filter by search
-        if (state.filter.search) {
-          const searchLower = state.filter.search.toLowerCase();
-          const nameMatch = icon.name && icon.name.toLowerCase().includes(searchLower);
-          const tagMatch = icon.tags && Array.isArray(icon.tags) && icon.tags.some(tag => tag.toLowerCase().includes(searchLower));
-          return nameMatch || tagMatch;
-        }
-        
-        return true;
-      });
+      console.log('📊 Liczba ikon do filtrowania:', state.icons.length);
+      
+      // Apply filters - używamy teraz getFilteredIcons
+      const filteredIcons = getFilteredIcons();
+      
+      console.log('📊 Liczba przefiltrowanych ikon:', filteredIcons.length);
       
       // Update icons count
       iconsCount.textContent = `${filteredIcons.length} icons found`;
@@ -585,41 +693,68 @@
         return;
       }
       
+      console.log('🎨 Tworzenie kart ikon...');
+      
       // Create icon cards
-      filteredIcons.forEach(icon => {
-        // Create card element
-        const card = document.createElement('div');
-        card.className = 'icon-card';
-        card.setAttribute('data-id', icon.id);
-        
-        // Add tooltip with icon name
-        const tooltip = document.createElement('div');
-        tooltip.className = 'icon-tooltip';
-        tooltip.textContent = icon.name;
-        card.appendChild(tooltip);
-        
-        // Create SVG container
-        const svgContainer = document.createElement('div');
-        svgContainer.className = 'svg-container';
-        card.appendChild(svgContainer);
-        
-        // Create name element
-        const nameElement = document.createElement('div');
-        nameElement.className = 'icon-name';
-        nameElement.textContent = icon.name;
-        card.appendChild(nameElement);
-        
-        // Load SVG
-        loadIconSvg(icon, svgContainer);
-        
-        // Add click handler for selection
-        card.addEventListener('click', () => {
-          toggleIconSelection(icon.id, card);
-        });
-        
-        // Add to grid
-        iconsGrid.appendChild(card);
+      filteredIcons.forEach((icon, index) => {
+        try {
+          if (!icon || typeof icon !== 'object') {
+            console.error(`⚠️ BŁĄD: Ikona #${index} jest nieprawidłowa:`, icon);
+            return;
+          }
+          
+          if (!icon.id) {
+            console.error(`⚠️ BŁĄD: Ikona #${index} nie ma ID:`, icon);
+            return;
+          }
+          
+          console.log(`✅ Renderowanie ikony: ${icon.id}, kategorie:`, icon.categories || []);
+          
+          // Create card element
+          const card = document.createElement('div');
+          card.className = 'icon-card';
+          card.setAttribute('data-id', icon.id);
+          
+          // Sprawdź, czy ikona jest już wybrana
+          if (state.selectedIcons.some(selected => selected.id === icon.id)) {
+            card.classList.add('selected');
+          }
+          
+          // Add tooltip with icon name
+          const tooltip = document.createElement('div');
+          tooltip.className = 'icon-tooltip';
+          tooltip.textContent = icon.name || icon.id; // Używamy id, jeśli name nie istnieje
+          card.appendChild(tooltip);
+          
+          // Create SVG container
+          const svgContainer = document.createElement('div');
+          svgContainer.className = 'svg-container';
+          card.appendChild(svgContainer);
+          
+          // Sprawdzamy, czy ikona ma URL SVG
+          if (!icon.svgUrl) {
+            console.warn(`⚠️ UWAGA: Ikona ${icon.id} nie ma URL SVG`);
+            svgContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="${state.color}"/>
+            </svg>`;
+          } else {
+            // Load SVG
+            loadIconSvg(icon, svgContainer);
+          }
+          
+          // Add click handler for selection
+          card.addEventListener('click', () => {
+            toggleIconSelection(icon.id, card);
+          });
+          
+          // Add to grid
+          iconsGrid.appendChild(card);
+        } catch (error) {
+          console.error(`⚠️ BŁĄD podczas renderowania ikony:`, error);
+        }
       });
+      
+      console.log('🔄 Renderowanie ikon - zakończone');
     }
 
     // Toggle selection of an icon
@@ -751,26 +886,4 @@
           color: state.color
         }
       }, '*');
-    }
-
-    // Initialize categories dropdown
-    function initializeCategories() {
-      // Sprawdzamy, czy tablica kategorii istnieje
-      if (!state.categories || !Array.isArray(state.categories)) {
-        console.error('⚠️ BŁĄD: state.categories nie jest tablicą!');
-        return;
-      }
-      
-      // Keep the "All Categories" option and clear the rest
-      categorySelect.innerHTML = '<option value="">All Categories</option>';
-      
-      // Add categories
-      if (state.categories.length > 0) {
-        state.categories.forEach(category => {
-          const option = document.createElement('option');
-          option.value = category;
-          option.textContent = category;
-          categorySelect.appendChild(option);
-        });
-      }
     }</script></body></html>
