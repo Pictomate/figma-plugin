@@ -1,76 +1,69 @@
 {
-  "lastUpdated": "2023-06-15T12:00:00Z",
+  "lastUpdated": "2025-03-26T18:29:45.974Z",
   "totalCount": 7,
-  "categories": [
-    "Interfejs", 
-    "Media", 
-    "Komunikacja", 
-    "Finanse", 
-    "Biznes", 
-    "Transport", 
-    "Edukacja", 
-    "Zdrowie", 
-    "Sport", 
-    "Pogoda", 
-    "Design", 
-    "Ecommerce"
-  ],
   "icons": [
     {
-      "id": "icon-001",
-      "name": "Home",
-      "categories": ["Interfejs"],
-      "tags": ["dom", "strona główna", "dashboard", "menu"],
-      "svgUrl": "https://pictomate.com/icons/Interfejs/home.svg",
-      "premium": false
+      "id": "home",
+      "name": "home",
+      "categories": [
+        "Interfejs"
+      ],
+      "tags": [],
+      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Interfejs/home.svg"
     },
     {
-      "id": "icon-002",
-      "name": "Search",
-      "categories": ["Interfejs"],
-      "tags": ["szukaj", "lupa", "wyszukiwanie"],
-      "svgUrl": "https://pictomate.com/icons/Interfejs/search.svg",
-      "premium": false
+      "id": "search",
+      "name": "search",
+      "categories": [
+        "Interfejs"
+      ],
+      "tags": [],
+      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Interfejs/search.svg"
     },
     {
-      "id": "icon-003",
-      "name": "Settings",
-      "categories": ["Interfejs"],
-      "tags": ["ustawienia", "konfiguracja", "opcje", "preferencje"],
-      "svgUrl": "https://pictomate.com/icons/Interfejs/settings.svg",
-      "premium": false
+      "id": "settings",
+      "name": "settings",
+      "categories": [
+        "Interfejs"
+      ],
+      "tags": [],
+      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Interfejs/settings.svg"
     },
     {
-      "id": "icon-004",
-      "name": "Play",
-      "categories": ["Media"],
-      "tags": ["odtwarzanie", "wideo", "film", "start"],
-      "svgUrl": "https://pictomate.com/icons/Media/play.svg",
-      "premium": false
+      "id": "mail",
+      "name": "mail",
+      "categories": [
+        "Komunikacja"
+      ],
+      "tags": [],
+      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Komunikacja/mail.svg"
     },
     {
-      "id": "icon-005",
-      "name": "Pause",
-      "categories": ["Media"],
-      "tags": ["pauza", "przerwa", "wideo", "film"],
-      "svgUrl": "https://pictomate.com/icons/Media/pause.svg",
-      "premium": false
+      "id": "message",
+      "name": "message",
+      "categories": [
+        "Komunikacja"
+      ],
+      "tags": [],
+      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Komunikacja/message.svg"
     },
     {
-      "id": "icon-006",
-      "name": "Message",
-      "categories": ["Komunikacja"],
-      "tags": ["wiadomość", "czat", "komunikacja", "rozmowa"],
-      "svgUrl": "https://pictomate.com/icons/Komunikacja/message.svg",
-      "premium": false
+      "id": "pause",
+      "name": "pause",
+      "categories": [
+        "Media"
+      ],
+      "tags": [],
+      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Media/pause.svg"
     },
     {
-      "id": "icon-007",
-      "name": "Mail",
-      "categories": ["Komunikacja"],
-      "tags": ["email", "poczta", "wiadomość", "koperta"],
-      "svgUrl": "https://pictomate.com/icons/Komunikacja/mail.svg",
-      "premium": false
+      "id": "play",
+      "name": "play",
+      "categories": [
+        "Media"
+      ],
+      "tags": [],
+      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Media/play.svg"
     }
   ]
-} 
+}
