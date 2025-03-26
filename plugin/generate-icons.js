@@ -1,7 +1,7 @@
 /**
  * Script to generate metadata for SVG icons
  * 
- * This script scans the icons directory recursively, finds all SVG files
+ * This script scans the assets/icons directory recursively, finds all SVG files
  * and generates a metadata JSON file with information about each icon.
  */
 
@@ -9,9 +9,9 @@ const fs = require('fs');
 const path = require('path');
 
 // Configuration
-const ICONS_DIR = path.join(__dirname, 'icons');
-const OUTPUT_FILE = path.join(__dirname, 'icons-metadata.json');
-const BASE_URL = process.env.BASE_URL || 'https://my-vercel-app.vercel.app/';
+const ICONS_DIR = path.join(__dirname, '..', 'assets', 'icons');
+const OUTPUT_FILE = path.join(__dirname, '..', 'assets', 'icons-metadata.json');
+const BASE_URL = process.env.BASE_URL || 'https://figma-icon-plugin.vercel.app/';
 
 /**
  * Recursively finds all SVG files in a directory
@@ -79,6 +79,13 @@ function main() {
   console.log('Starting icon metadata generation...');
   
   try {
+    // Verify that directory exists
+    if (!fs.existsSync(ICONS_DIR)) {
+      console.error(`Error: Directory ${ICONS_DIR} does not exist.`);
+      console.log('Make sure you are running the script from the correct location.');
+      process.exit(1);
+    }
+    
     // Find all SVG files
     console.log(`Scanning directory: ${ICONS_DIR}`);
     const svgFiles = findSvgFiles(ICONS_DIR, path.dirname(ICONS_DIR));
@@ -94,9 +101,18 @@ function main() {
       icons: metadata
     };
     
+    // Create output directory if it doesn't exist
+    const outputDir = path.dirname(OUTPUT_FILE);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    
     // Write to file with 2-space indentation
     fs.writeFileSync(OUTPUT_FILE, JSON.stringify(outputData, null, 2));
     console.log(`Metadata successfully written to ${OUTPUT_FILE}`);
+    console.log(`Generated ${metadata.length} icon entries.`);
+    console.log(`Last updated: ${outputData.lastUpdated}`);
+    console.log('\nRemember to deploy your assets folder to Vercel for the plugin to access the latest icons!');
   } catch (error) {
     console.error('Error generating icon metadata:', error);
     process.exit(1);

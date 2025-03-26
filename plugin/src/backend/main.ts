@@ -2,19 +2,19 @@
  * Main plugin file - handles communication with Figma API
  */
 import { Icon, MessageType } from '../types';
-import iconsMetadata from '../icons-metadata.json';
+import { ICONS_METADATA_URL } from '../config/config';
 
 /**
  * PRZEPŁYW DANYCH IKON W APLIKACJI:
- * 1. Plik generate-icons.js skanuje folder icons/ i generuje icons-metadata.json w głównym katalogu
- * 2. Podczas budowania pluginu, icons-metadata.json jest kopiowany do katalogu src/ przez webpack
- * 3. Plugin importuje metadane i używa ich do pobierania ikon SVG z określonego URL
- * 4. Metadane zawierają informacje o ikonach, kategoriach oraz pełne URL do plików SVG
+ * 1. Plik generate-icons.js skanuje folder assets/icons/ i generuje assets/icons-metadata.json
+ * 2. Plik assets/icons-metadata.json jest hostowany na Vercel
+ * 3. Plugin pobiera metadane z zewnętrznego URL (https://twoja-aplikacja.vercel.app/icons-metadata.json)
+ * 4. Na podstawie metadanych, plugin pobiera pliki SVG z określonych URL-i
  * 
  * Aby zaktualizować ikony:
- * 1. Dodaj nowe pliki SVG do folderu icons/
- * 2. Uruchom `npm run generate-icons` aby zaktualizować icons-metadata.json
- * 3. Zbuduj i opublikuj plugin komendą `npm run build`
+ * 1. Dodaj nowe pliki SVG do folderu assets/icons/
+ * 2. Uruchom `npm run generate-icons` aby zaktualizować icons-metadata.json w folderze assets/
+ * 3. Zbuduj i opublikuj zmiany (np. przez Vercel)
  */
 
 /**
@@ -26,6 +26,7 @@ figma.skipInvisibleInstanceChildren = true;
  * Inicjalizacja pluginu
  */
 console.log('Plugin starting...');
+console.log('Icons metadata URL:', ICONS_METADATA_URL);
 
 /**
  * Ustawienia rozmiaru UI
@@ -207,6 +208,34 @@ async function insertIcons(icons: Icon[], color: string): Promise<void> {
 }
 
 /**
+ * Pobiera metadane ikon z zewnętrznego serwera
+ * @returns Promise z danymi o ikonach
+ */
+async function fetchIconsMetadata() {
+  try {
+    console.log(`Pobieranie metadanych ikon z: ${ICONS_METADATA_URL}`);
+    const response = await fetch(ICONS_METADATA_URL);
+    
+    if (!response.ok) {
+      throw new Error(`Błąd pobierania metadanych: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Pobrano metadane ikon:', {
+      lastUpdated: data.lastUpdated,
+      totalCount: data.totalCount,
+      categories: data.categories ? data.categories.length : 0,
+      icons: data.icons ? data.icons.length : 0
+    });
+    
+    return data;
+  } catch (error) {
+    console.error('Błąd podczas pobierania metadanych ikon:', error);
+    throw error;
+  }
+}
+
+/**
  * Nasłuchiwanie wiadomości z UI
  */
 figma.ui.onmessage = async (msg: any) => {
@@ -217,8 +246,9 @@ figma.ui.onmessage = async (msg: any) => {
       
       try {
         // Pobierz ikony i kategorie z metadanych
+        const iconsMetadata = await fetchIconsMetadata();
         const icons: Icon[] = iconsMetadata.icons;
-        const categories: string[] = iconsMetadata.categories;
+        const categories: string[] = iconsMetadata.categories || [];
         
         // Wyślij dane do UI
         figma.ui.postMessage({
