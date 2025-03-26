@@ -371,6 +371,18 @@
   </div>
 
   <script>
+    /**
+     * OBSŁUGA POBIERANIA I WYŚWIETLANIA IKON:
+     * 1. UI wysyła komunikat UI_READY do głównego wątku pluginu
+     * 2. Główny wątek odpowiada wiadomością INIT_DATA zawierającą:
+     *    - metadane ikon z pliku icons-metadata.json (wygenerowanego przez generate-icons.js)
+     *    - listę kategorii
+     * 3. UI renderuje ikony i kategorie w interfejsie
+     * 4. Użytkownik może filtrować ikony i zmieniać ich kolor
+     * 5. Po kliknięciu "Insert Selected Icons", wysyłany jest komunikat INSERT_ICONS z wybranymi ikonami
+     * 6. Główny wątek pobiera pliki SVG z adresów URL zawartych w metadanych i wstawia je do dokumentu
+     */
+
     // Application state
     const state = {
       icons: [],
@@ -514,6 +526,13 @@
         switch (message.type) {
           case 'INIT_DATA':
             // Initialize the app with data from the plugin
+            /**
+             * Otrzymujemy metadane ikon wygenerowane przez generate-icons.js
+             * Te dane zawierają:
+             * - Informacje o ikonach (id, name, categories, tags)
+             * - URL do plików SVG, które są używane do renderowania ikon
+             * - Kategorie, które są używane do filtrowania
+             */
             state.icons = message.icons;
             state.categories = message.categories;
             

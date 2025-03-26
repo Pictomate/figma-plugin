@@ -5,6 +5,19 @@ import { Icon, MessageType } from '../types';
 import iconsMetadata from '../icons-metadata.json';
 
 /**
+ * PRZEPŁYW DANYCH IKON W APLIKACJI:
+ * 1. Plik generate-icons.js skanuje folder icons/ i generuje icons-metadata.json w głównym katalogu
+ * 2. Podczas budowania pluginu, icons-metadata.json jest kopiowany do katalogu src/ przez webpack
+ * 3. Plugin importuje metadane i używa ich do pobierania ikon SVG z określonego URL
+ * 4. Metadane zawierają informacje o ikonach, kategoriach oraz pełne URL do plików SVG
+ * 
+ * Aby zaktualizować ikony:
+ * 1. Dodaj nowe pliki SVG do folderu icons/
+ * 2. Uruchom `npm run generate-icons` aby zaktualizować icons-metadata.json
+ * 3. Zbuduj i opublikuj plugin komendą `npm run build`
+ */
+
+/**
  * Konfiguracja pluginu
  */
 figma.skipInvisibleInstanceChildren = true;
@@ -33,6 +46,15 @@ function hexToRgb(hex: string): { r: number, g: number, b: number } {
 
 /**
  * Funkcja wstawiająca ikony do dokumentu Figma
+ * 
+ * PRZEPŁYW DANYCH:
+ * 1. Funkcja otrzymuje tablicę obiektów ikon z UI (wygenerowanych przez generate-icons.js)
+ * 2. Każda ikona zawiera pole svgUrl wskazujące na plik SVG
+ * 3. Funkcja pobiera każdy plik SVG z podanego URL
+ * 4. Tworzy węzeł Figma dla każdej ikony i wstawia ją do dokumentu
+ * 
+ * @param icons - Tablica obiektów ikon do wstawienia
+ * @param color - Kolor ikon w formacie HEX
  */
 async function insertIcons(icons: Icon[], color: string): Promise<void> {
   // Sprawdź czy mamy ikony do wstawienia

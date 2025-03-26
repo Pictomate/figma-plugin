@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   mode: 'development',
@@ -51,6 +52,17 @@ module.exports = {
       template: './src/ui/ui.html',
       filename: 'ui.html',
       inject: false
+    }),
+    // Kopiuje plik icons-metadata.json do katalogu src/
+    // Po uruchomieniu `npm run generate-icons` i przed budowaniem
+    new CopyPlugin({
+      patterns: [
+        { 
+          from: 'icons-metadata.json', 
+          to: 'src/icons-metadata.json',
+          noErrorOnMissing: true 
+        },
+      ],
     }),
   ],
   
