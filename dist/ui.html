@@ -1,0 +1,699 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Figma Icon Plugin</title><style>:root {
+      --primary-color: #0D99FF;
+      --primary-hover: #007AE5;
+      --sidebar-width: 240px;
+      --border-color: #E6E6E6;
+      --text-primary: #333333;
+      --text-secondary: #666666;
+      --bg-gray: #F5F5F5;
+      --icon-size: 48px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      font-size: 12px;
+      color: var(--text-primary);
+      background-color: white;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-width);
+      padding: 16px;
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .search-container {
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 8px 12px;
+      padding-right: 32px; /* Space for reset button */
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary-color);
+    }
+
+    .dropdown-container {
+      margin-bottom: 16px;
+    }
+
+    .dropdown-select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 12px;
+      outline: none;
+      appearance: none;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+
+    .color-container {
+      margin-bottom: 16px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .color-label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .color-input {
+      width: 42px;
+      height: 30px;
+      padding: 0;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .hex-input-container {
+      flex: 1;
+      position: relative;
+    }
+
+    .hex-input {
+      width: 100%;
+      height: 30px;
+      padding: 0 8px;
+      padding-right: 32px; /* Space for reset button */
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: monospace;
+      outline: none;
+    }
+
+    .hex-input:focus {
+      border-color: var(--primary-color);
+    }
+
+    .action-button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+      margin-top: auto;
+      margin-bottom: 16px;
+    }
+
+    .action-button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .action-button:disabled {
+      background-color: #CCCCCC;
+      cursor: not-allowed;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-secondary);
+      font-size: 11px;
+    }
+
+    .footer a {
+      color: var(--text-secondary);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .main-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .icons-count {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .select-all-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .icons-grid {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-content: flex-start;
+    }
+
+    .icon-card {
+      width: var(--icon-size);
+      height: var(--icon-size);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .icon-card:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 1px var(--primary-color);
+    }
+
+    .icon-card.selected {
+      border-color: var(--primary-color);
+      background-color: rgba(13, 153, 255, 0.1);
+      box-shadow: 0 0 0 1px var(--primary-color);
+    }
+
+    .icon-card.selected::after {
+      content: "";
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      width: 16px;
+      height: 16px;
+      background-color: var(--primary-color);
+      border-radius: 50%;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>');
+      background-repeat: no-repeat;
+      background-position: center center;
+    }
+
+    .svg-container {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .no-results {
+      width: 100%;
+      padding: 24px;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+
+    .loader {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100px;
+    }
+
+    /* Tooltip on hover */
+    .icon-tooltip {
+      position: absolute;
+      bottom: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #333;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      white-space: nowrap;
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .icon-card:hover .icon-tooltip {
+      opacity: 1;
+    }
+
+    /* Shared styles for reset buttons */
+    .reset-button {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+      display: none; /* Hidden by default */
+      color: var(--text-secondary);
+    }
+
+    .reset-button:hover {
+      color: var(--text-primary);
+    }
+
+    .reset-button svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Show reset button when parent has content */
+    .has-content .reset-button {
+      display: block;
+    }</style></head><body><div class="sidebar"><div class="search-container"><input class="search-input" id="searchInput" placeholder="Search icons..."> <button class="reset-button" id="searchReset" title="Clear search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></button></div><div class="dropdown-container"><select id="categorySelect" class="dropdown-select"><option value="">All Categories</option></select></div><div class="color-container"><input type="color" id="colorPicker" class="color-input" value="#000000"><div class="hex-input-container"><input id="hexInput" class="hex-input" value="000000" maxlength="6" placeholder="000000"> <button class="reset-button" id="hexReset" title="Reset color"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></button></div></div><button id="insertButton" class="action-button" disabled="disabled">Select icons</button><div class="footer"><a href="https://pictomate.com" target="_blank">pictomate.com</a> <span>v1.0</span></div></div><div class="main-content"><div class="main-header"><div class="icons-count" id="iconsCount">0 icons found</div><div class="select-all-container"><input type="checkbox" id="selectAllCheckbox"> <label for="selectAllCheckbox">Select all</label></div></div><div class="icons-grid" id="iconsGrid"><div class="loader">Loading icons...</div></div></div><script>// Application state
+    const state = {
+      icons: [],
+      categories: [],
+      selectedIcons: [],
+      filter: {
+        search: '',
+        category: ''
+      },
+      color: '#000000'
+    };
+
+    // DOM elements
+    const searchInput = document.getElementById('searchInput');
+    const searchReset = document.getElementById('searchReset');
+    const categorySelect = document.getElementById('categorySelect');
+    const colorPicker = document.getElementById('colorPicker');
+    const hexInput = document.getElementById('hexInput');
+    const hexReset = document.getElementById('hexReset');
+    const iconsGrid = document.getElementById('iconsGrid');
+    const iconsCount = document.getElementById('iconsCount');
+    const insertButton = document.getElementById('insertButton');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+
+    // Initialize the app when loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      // Notify the plugin that UI is ready
+      parent.postMessage({ type: 'UI_READY', pluginMessage: { type: 'UI_READY' } }, '*');
+      
+      // Set up event listeners
+      setupEventListeners();
+    });
+
+    // Helper function to toggle reset button visibility
+    function toggleResetButton(input, container, defaultValue = '') {
+      if (input.value && input.value !== defaultValue) {
+        container.classList.add('has-content');
+      } else {
+        container.classList.remove('has-content');
+      }
+    }
+
+    // Set up all event listeners
+    function setupEventListeners() {
+      // Search input and reset
+      searchInput.addEventListener('input', (e) => {
+        state.filter.search = e.target.value.toLowerCase();
+        toggleResetButton(searchInput, searchInput.parentElement);
+        renderIcons();
+      });
+
+      searchReset.addEventListener('click', () => {
+        searchInput.value = '';
+        state.filter.search = '';
+        toggleResetButton(searchInput, searchInput.parentElement);
+        renderIcons();
+      });
+
+      // Category select
+      categorySelect.addEventListener('change', (e) => {
+        state.filter.category = e.target.value;
+        renderIcons();
+      });
+
+      // Color picker - update immediately on input event (while dragging)
+      colorPicker.addEventListener('input', (e) => {
+        const color = e.target.value;
+        console.log('Color picker changed to:', color);
+        state.color = color;
+        hexInput.value = color.substring(1);
+        toggleResetButton(hexInput, hexInput.parentElement, '000000');
+        
+        // Wymuś aktualizację koloru z krótkim opóźnieniem
+        setTimeout(() => {
+          updateIconColors();
+        }, 10);
+      });
+
+      // Hex input and reset - update as typing
+      hexInput.addEventListener('input', (e) => {
+        let hex = e.target.value.replace(/[^0-9A-Fa-f]/g, '');
+        e.target.value = hex;
+        toggleResetButton(hexInput, hexInput.parentElement, '000000');
+        
+        // Aktualizuj kolor nawet, gdy hex nie jest jeszcze pełny
+        if (hex.length > 0) {
+          // Uzupełnij hex zerami do 6 znaków, jeśli jest krótszy
+          while (hex.length < 6) {
+            hex += '0';
+          }
+          const newColor = '#' + hex;
+          console.log('Hex input changed to:', newColor);
+          state.color = newColor;
+          colorPicker.value = newColor;
+          
+          // Wymuś aktualizację koloru z krótkim opóźnieniem
+          setTimeout(() => {
+            updateIconColors();
+          }, 10);
+        }
+      });
+
+      hexReset.addEventListener('click', () => {
+        const defaultColor = '#000000';
+        console.log('Resetting color to:', defaultColor);
+        hexInput.value = '000000';
+        state.color = defaultColor;
+        colorPicker.value = defaultColor;
+        toggleResetButton(hexInput, hexInput.parentElement, '000000');
+        
+        // Wymuś aktualizację koloru z krótkim opóźnieniem
+        setTimeout(() => {
+          updateIconColors();
+        }, 10);
+      });
+
+      // Insert button
+      insertButton.addEventListener('click', insertSelectedIcons);
+
+      // Select all checkbox
+      selectAllCheckbox.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          // Select all filtered icons
+          const filteredIcons = getFilteredIcons();
+          state.selectedIcons = [...filteredIcons];
+        } else {
+          // Deselect all
+          state.selectedIcons = [];
+        }
+        renderIcons();
+        updateInsertButton();
+      });
+
+      // Listen for messages from the plugin
+      window.onmessage = (event) => {
+        const message = event.data.pluginMessage;
+        if (!message) return;
+
+        console.log('Message from plugin:', message);
+
+        switch (message.type) {
+          case 'INIT_DATA':
+            // Initialize the app with data from the plugin
+            state.icons = message.icons;
+            state.categories = message.categories;
+            
+            // Populate category dropdown
+            populateCategoryDropdown();
+            
+            // Render initial icons
+            renderIcons();
+            break;
+            
+          case 'ICONS_INSERTED':
+            // Handle result of icon insertion
+            if (message.success) {
+              // Clear selection after successful insertion
+              state.selectedIcons = [];
+              renderIcons();
+              updateInsertButton();
+            }
+            break;
+        }
+      };
+    }
+
+    // Populate category dropdown with options
+    function populateCategoryDropdown() {
+      // Clear existing options except "All Categories"
+      while (categorySelect.options.length > 1) {
+        categorySelect.remove(1);
+      }
+      
+      // Add category options
+      state.categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categorySelect.appendChild(option);
+      });
+    }
+
+    // Get icons filtered by search and category
+    function getFilteredIcons() {
+      return state.icons.filter(icon => {
+        // Filter by search
+        const matchesSearch = state.filter.search === '' || 
+          icon.name.toLowerCase().includes(state.filter.search) || 
+          icon.tags.some(tag => tag.toLowerCase().includes(state.filter.search));
+        
+        // Filter by category
+        const matchesCategory = state.filter.category === '' || 
+          icon.categories.includes(state.filter.category);
+        
+        return matchesSearch && matchesCategory;
+      });
+    }
+
+    // Render icons in the grid
+    function renderIcons() {
+      // Get filtered icons
+      const filteredIcons = getFilteredIcons();
+      
+      // Update icons count
+      iconsCount.textContent = `${filteredIcons.length} icon${filteredIcons.length !== 1 ? 's' : ''} found`;
+      
+      // Check if "Select All" should be checked
+      const allSelected = filteredIcons.length > 0 && 
+        filteredIcons.every(icon => state.selectedIcons.some(selected => selected.id === icon.id));
+      selectAllCheckbox.checked = allSelected;
+      
+      // Clear grid
+      iconsGrid.innerHTML = '';
+      
+      // Show message if no icons found
+      if (filteredIcons.length === 0) {
+        const noResults = document.createElement('div');
+        noResults.className = 'no-results';
+        noResults.textContent = 'No icons found matching your criteria';
+        iconsGrid.appendChild(noResults);
+        return;
+      }
+      
+      // Create icon cards
+      filteredIcons.forEach(icon => {
+        const isSelected = state.selectedIcons.some(selected => selected.id === icon.id);
+        
+        const iconCard = document.createElement('div');
+        iconCard.className = `icon-card${isSelected ? ' selected' : ''}`;
+        iconCard.dataset.id = icon.id;
+        
+        // Create SVG container
+        const svgContainer = document.createElement('div');
+        svgContainer.className = 'svg-container';
+        
+        // Dodaj tooltip z informacją o ikonie
+        svgContainer.title = icon.name;
+        
+        // Ładujemy ikonę SVG z hostingu
+        loadIconSvg(icon, svgContainer);
+        
+        // Create tooltip
+        const tooltip = document.createElement('div');
+        tooltip.className = 'icon-tooltip';
+        tooltip.textContent = icon.name;
+        
+        // Append elements
+        iconCard.appendChild(svgContainer);
+        iconCard.appendChild(tooltip);
+        
+        // Add click event
+        iconCard.addEventListener('click', () => {
+          toggleIconSelection(icon);
+        });
+        
+        // Add to grid
+        iconsGrid.appendChild(iconCard);
+      });
+    }
+
+    // Toggle selection of an icon
+    function toggleIconSelection(icon) {
+      const isSelected = state.selectedIcons.some(selected => selected.id === icon.id);
+      
+      if (isSelected) {
+        // Remove from selection
+        state.selectedIcons = state.selectedIcons.filter(selected => selected.id !== icon.id);
+      } else {
+        // Add to selection
+        state.selectedIcons.push(icon);
+      }
+      
+      // Zamiast renderować całą siatkę, aktualizujemy tylko wybrane karty
+      const iconCards = document.querySelectorAll('.icon-card');
+      iconCards.forEach(card => {
+        if (card.dataset.id === icon.id) {
+          if (isSelected) {
+            card.classList.remove('selected');
+          } else {
+            card.classList.add('selected');
+          }
+        }
+      });
+      
+      // Update UI
+      // renderIcons(); // Usuwamy to, żeby ikony nie migały
+      updateInsertButton();
+      
+      // Zaktualizuj stan checkboxa "Select All"
+      const filteredIcons = getFilteredIcons();
+      const allSelected = filteredIcons.length > 0 && 
+        filteredIcons.every(icon => state.selectedIcons.some(selected => selected.id === icon.id));
+      selectAllCheckbox.checked = allSelected;
+    }
+
+    // Update colors of SVGs in the grid
+    function updateIconColors() {
+      console.log('Updating icon colors to:', state.color);
+      
+      // Zaktualizuj kolor wszystkich ikon SVG
+      document.querySelectorAll('.svg-container svg').forEach(svg => {
+        try {
+          // Ustaw kolor dla samego elementu SVG
+          svg.setAttribute('fill', state.color);
+          
+          // Ustaw kolor dla wszystkich elementów wewnątrz SVG
+          const elements = svg.querySelectorAll('*');
+          elements.forEach(element => {
+            if (!element.getAttribute('fill') || element.getAttribute('fill') === 'none') {
+              element.setAttribute('fill', state.color);
+            }
+          });
+          
+          // Dodatkowo zaktualizuj wszystkie path, aby upewnić się, że kolor został zmieniony
+          const paths = svg.querySelectorAll('path');
+          paths.forEach(path => {
+            path.setAttribute('fill', state.color);
+          });
+          
+          // Wymuś odświeżenie DOM
+          svg.style.transform = 'translateZ(0)';
+          setTimeout(() => { svg.style.transform = ''; }, 0);
+        } catch (error) {
+          console.error('Error updating SVG color:', error);
+        }
+      });
+    }
+
+    // Funkcja do ładowania ikony SVG - pomocnicza funkcja, którą użyjemy przy renderowaniu
+    function loadIconSvg(icon, container) {
+      fetch(icon.svgUrl)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to load SVG: ${response.status}`);
+          }
+          return response.text();
+        })
+        .then(svgText => {
+          container.innerHTML = svgText;
+          
+          // Ustaw kolor SVG
+          const svgElement = container.querySelector('svg');
+          if (svgElement) {
+            // Ustaw kolor dla samego elementu SVG
+            svgElement.setAttribute('fill', state.color);
+            
+            // Ustaw kolor dla wszystkich elementów wewnątrz SVG
+            const elements = svgElement.querySelectorAll('*');
+            elements.forEach(element => {
+              if (!element.getAttribute('fill') || element.getAttribute('fill') === 'none') {
+                element.setAttribute('fill', state.color);
+              }
+            });
+            
+            // Dodatkowo zaktualizuj wszystkie path
+            const paths = svgElement.querySelectorAll('path');
+            paths.forEach(path => {
+              path.setAttribute('fill', state.color);
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Error loading SVG:', icon.name, error.message);
+          // Domyślna ikona w przypadku błędu
+          container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="${state.color}"/>
+          </svg>`;
+        });
+    }
+
+    // Update state of insert button
+    function updateInsertButton() {
+      const count = state.selectedIcons.length;
+      insertButton.disabled = count === 0;
+      insertButton.textContent = count > 0 ? `Move ${count} icons to Figma` : 'Move to Figma';
+    }
+
+    // Insert selected icons into Figma
+    function insertSelectedIcons() {
+      if (state.selectedIcons.length === 0) return;
+      
+      parent.postMessage({
+        type: 'INSERT_ICONS', 
+        pluginMessage: {
+          type: 'INSERT_ICONS',
+          icons: state.selectedIcons,
+          color: state.color
+        }
+      }, '*');
+    }</script></body></html>

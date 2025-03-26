@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Figma Icon Plugin</title>
+  <style>
+    /* Globalny reset CSS */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Inter, sans-serif;
+    }
+    
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    
+    #app {
+      height: 100%;
+      width: 100%;
+    }
+    
+    /* Podstawowe style zgodne z Figma UI */
+    body {
+      font-size: 14px;
+      color: #333;
+      background-color: #f5f5f5;
+    }
+    
+    input, button, select {
+      font-size: 14px;
+      border-radius: 2px;
+    }
+    
+    button {
+      padding: 8px 16px;
+      cursor: pointer;
+      background-color: #18a0fb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    
+    button:hover {
+      background-color: #0d8fe0;
+    }
+    
+    button:active {
+      background-color: #0685d3;
+    }
+    
+    input[type="text"], input[type="search"] {
+      padding: 8px;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      width: 100%;
+    }
+    
+    input[type="text"]:focus, input[type="search"]:focus {
+      outline: none;
+      border-color: #18a0fb;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Główny komponent React pluginu -->
+  <script type="text/babel" src="./ui.tsx"></script>
+</body>
+</html> 
