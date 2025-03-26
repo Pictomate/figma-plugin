@@ -240,6 +240,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
     }
 
     .no-results {
@@ -307,6 +308,45 @@
     /* Show reset button when parent has content */
     .has-content .reset-button {
       display: block;
+    }
+
+    /* Style dla stanów ładowania i błędów ikon */
+    .svg-container {
+      position: relative;
+    }
+    
+    /* Ikony z błędem ładowania */
+    .icon-load-error {
+      position: relative;
+      background-color: rgba(255, 0, 0, 0.05);
+      border: 1px dashed rgba(255, 0, 0, 0.3);
+    }
+    
+    /* Animacja ładowania */
+    .loading-icon {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .loading-icon::after {
+      content: "";
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(0, 0, 0, 0.1);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: loader-spin 0.8s linear infinite;
+    }
+    
+    @keyframes loader-spin {
+      to { transform: rotate(360deg); }
     }</style></head><body><div class="sidebar"><div class="search-container"><input class="search-input" id="searchInput" placeholder="Search icons..."> <button class="reset-button" id="searchReset" title="Clear search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></button></div><div class="dropdown-container"><select id="categorySelect" class="dropdown-select"><option value="">All Categories</option></select></div><div class="color-container"><input type="color" id="colorPicker" class="color-input" value="#000000"><div class="hex-input-container"><input id="hexInput" class="hex-input" value="000000" maxlength="6" placeholder="000000"> <button class="reset-button" id="hexReset" title="Reset color"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></button></div></div><button id="insertButton" class="action-button" disabled="disabled">Select icons</button><div class="footer"><a href="https://pictomate.com" target="_blank">pictomate.com</a> <span>v1.0</span></div></div><div class="main-content"><div class="main-header"><div class="icons-count" id="iconsCount">0 icons found</div><div class="select-all-container"><input type="checkbox" id="selectAllCheckbox"> <label for="selectAllCheckbox">Select all</label></div></div><div class="icons-grid" id="iconsGrid"><div class="loader">Loading icons...</div></div></div><script>/**
      * OBSŁUGA POBIERANIA I WYŚWIETLANIA IKON:
      * 1. UI wysyła komunikat UI_READY do głównego wątku pluginu
@@ -840,163 +880,240 @@
     }
 
     /**
-     * DLACZEGO UŻYWAMY INLINE SVG ZAMIAST <img src="...">?
+     * NOWE PODEJŚCIE DO RENDEROWANIA IKON INLINE
      * 
-     * 1. Omijanie ograniczeń CORS: Figma działa w zabezpieczonym środowisku, gdzie żądania z tagów <img>
-     *    podlegają ścisłym restrykcjom CORS. Używając inline SVG (pobranie zawartości przez fetch 
-     *    i bezpośrednie wstawienie kodu SVG do DOM), możemy częściej omijać te ograniczenia.
-     * 
-     * 2. Lepsza kontrola nad stylami: Inline SVG pozwala nam bezpośrednio manipulować elementami SVG
-     *    poprzez DOM, co umożliwia łatwą zmianę kolorów, wymiarów i innych atrybutów.
-     * 
-     * 3. Łatwiejsze debugowanie: Możemy dokładnie śledzić, co się dzieje podczas pobierania SVG,
-     *    zobaczyć jego zawartość, statusy odpowiedzi HTTP i ewentualne problemy.
-     * 
-     * 4. Bezpieczniejsze dla Figma: Bezpośrednie wstawianie SVG minimalizuje problemy z Mixed Content,
-     *    które mogą wystąpić w środowisku Figma, zwłaszcza gdy zasoby są hostowane na zewnętrznych serwerach.
+     * Ten kod implementuje czyste podejście do pobierania i wyświetlania ikon SVG,
+     * eliminując problemy z CORS i zapewniając pełną kontrolę nad procesem renderowania.
      */
 
-    // Funkcja do ładowania ikony SVG - pomocnicza funkcja, którą użyjemy przy renderowaniu
+    // Główna funkcja do ładowania ikon SVG
     function loadIconSvg(icon, container) {
-      // Sprawdzanie czy URL istnieje
-      if (!icon.svgUrl) {
-        console.error(`⚠️ Brak URL dla ikony: ${icon.id || 'unknown'}`);
-        insertFallbackIcon(container);
+      if (!icon || !icon.id) {
+        console.error('⚠️ Nieprawidłowy obiekt ikony:', icon);
         return;
       }
 
-      // Poprawiamy URL i usuwamy podwójne ścieżki
-      let fixedUrl = correctSvgUrl(icon.svgUrl, icon.id);
+      // Dodaj klasę ładowania i element animacji
+      container.innerHTML = '';
+      const loadingIndicator = document.createElement('div');
+      loadingIndicator.className = 'loading-icon';
+      container.appendChild(loadingIndicator);
       
-      console.log(`📊 UI: Pobieranie SVG dla ikony ${icon.id} z URL:`, fixedUrl);
+      // Oznacz kontener jako w trakcie ładowania
+      container.classList.add('loading');
       
-      // Pobieramy SVG jako tekst i wstawiamy go bezpośrednio (inline SVG)
-      fetch(fixedUrl)
-        .then(response => {
-          console.log(`📊 UI: Status odpowiedzi dla ikony ${icon.id}: ${response.status}`);
-          logResponseDetails(response, icon.id);
-          
-          if (!response.ok) {
-            throw new Error(`Failed to load SVG: ${response.status}`);
-          }
-          return response.text();
-        })
-        .then(svgText => {
-          // Sprawdzamy, czy otrzymaliśmy faktycznie SVG
-          if (!validateSvgContent(svgText, icon.id)) {
-            throw new Error(`Invalid SVG format for icon ${icon.id}`);
-          }
-          
-          // Wstawiamy zawartość SVG inline do DOM
-          container.innerHTML = svgText;
-          
-          // Dostosowujemy SVG - ustawiamy wymiary i kolory
-          const svgElement = container.querySelector('svg');
-          if (svgElement) {
-            applyStylingToSvg(svgElement, state.color);
-            console.log(`✅ UI: Ikona ${icon.id} wstawiona inline poprawnie`);
-          } else {
-            console.warn(`⚠️ UI: SVG wstawiony, ale nie znaleziono elementu <svg> dla ikony ${icon.id}`);
-          }
-        })
-        .catch(error => {
-          console.error(`⚠️ UI: Błąd ładowania SVG dla ikony ${icon.id}:`, error.message);
-          insertFallbackIcon(container);
-        });
-    }
-
-    // Funkcja pomocnicza do poprawiania URL ikon
-    function correctSvgUrl(url, iconId) {
-      let fixedUrl = url;
+      // Buduj URL bezpośrednio na podstawie ID ikony
+      const baseUrl = 'https://figma-plugin-indol.vercel.app';
       
-      // Naprawiamy problem podwójnego segmentu 'icons/icons/'
-      if (fixedUrl.includes('/icons/icons/')) {
-        const originalUrl = fixedUrl;
-        fixedUrl = fixedUrl.replace('/icons/icons/', '/icons/');
-        console.log(`🔄 UI: Poprawiono URL ikony ${iconId} z podwójnym segmentem:
-        - Przed: ${originalUrl}
-        - Po: ${fixedUrl}`);
-      }
-
-      // Upewniamy się, że URL używa HTTPS
-      if (fixedUrl.startsWith('http://')) {
-        fixedUrl = fixedUrl.replace('http://', 'https://');
-        console.log(`🔄 UI: Zmieniono protokół z HTTP na HTTPS dla ikony ${iconId}`);
+      // Ekstrahuj kategorię z ikony (jeśli istnieje)
+      let category = '';
+      if (icon.categories && Array.isArray(icon.categories) && icon.categories.length > 0) {
+        category = icon.categories[0];
       }
       
-      return fixedUrl;
-    }
-
-    // Funkcja pomocnicza do logowania szczegółów odpowiedzi
-    function logResponseDetails(response, iconId) {
-      // Diagnostyka Content-Type
-      if (response.headers && typeof response.headers.get === 'function') {
-        const contentType = response.headers.get('Content-Type');
-        console.log(`📊 UI: Content-Type dla ikony ${iconId}: ${contentType}`);
-        if (contentType && !contentType.includes('svg') && !contentType.includes('xml')) {
-          console.warn(`⚠️ UI: Niepoprawny Content-Type: ${contentType}`);
+      // Mapowanie kategorii na odpowiednie ścieżki w URL
+      const categoryToPath = {
+        'Finance': 'Finance',
+        'Finanse': 'Finance',
+        'Interfejs': 'Interfejs',
+        'Interface': 'Interfejs',
+        'Media': 'Media',
+        'Komunikacja': 'Komunikacja',
+        'Communication': 'Komunikacja'
+      };
+      
+      // Wybierz odpowiednią ścieżkę lub użyj domyślnej
+      const categoryPath = categoryToPath[category] || category || 'icons';
+      
+      // Tworzenie prawidłowego URL dla SVG
+      const svgUrl = `${baseUrl}/icons/${categoryPath}/${icon.id}.svg`;
+      
+      console.log(`🔍 UI: Pobieranie ikony ${icon.id} (kategoria: ${category}) z URL:`, svgUrl);
+      
+      // Dodaj timestamp, aby uniknąć buforowania
+      const urlWithTimestamp = `${svgUrl}?t=${Date.now()}`;
+      
+      // Opcje dla fetch - wymuszamy no-cache
+      const fetchOptions = {
+        method: 'GET',
+        cache: 'no-store',
+        headers: {
+          'Accept': 'image/svg+xml,*/*',
+          'Cache-Control': 'no-cache'
         }
-      }
+      };
       
-      // Log headers jeśli są dostępne
-      try {
-        const headers = {};
-        if (response.headers && typeof response.headers.forEach === 'function') {
-          response.headers.forEach((value, key) => {
-            headers[key] = value;
+      // Tablica alternatywnych URL w przypadku błędu
+      const fallbackUrls = [
+        // Próba pierwotnej lokalizacji
+        urlWithTimestamp,
+        // Alternatywna lokalizacja: bezpośrednio w folderze /icons/
+        `${baseUrl}/icons/${icon.id}.svg?t=${Date.now()}`,
+        // Alternatywna lokalizacja: używając ID jako części ścieżki
+        `${baseUrl}/icons/${icon.id}/${icon.id}.svg?t=${Date.now()}`
+      ];
+      
+      // Funkcja do próby pobrania ikon z różnych źródeł
+      tryFetchFromUrls(fallbackUrls, 0);
+      
+      // Pobierz SVG jako tekst z różnych potencjalnych URL-i
+      function tryFetchFromUrls(urls, index) {
+        if (index >= urls.length) {
+          console.error(`❌ UI: Wyczerpano wszystkie opcje URL dla ikony ${icon.id}`);
+          container.innerHTML = '';
+          container.classList.remove('loading');
+          container.classList.add('icon-load-error');
+          return;
+        }
+        
+        const currentUrl = urls[index];
+        console.log(`🔍 UI: Próba #${index + 1} dla ikony ${icon.id} z URL:`, currentUrl);
+        
+        fetch(currentUrl, fetchOptions)
+          .then(response => {
+            console.log(`📊 UI: Status odpowiedzi dla ${icon.id}: ${response.status} ${response.statusText}`);
+            
+            if (response.status === 404) {
+              console.warn(`⚠️ UI: URL nie istnieje (404): ${currentUrl}`);
+              // Spróbuj następny URL
+              tryFetchFromUrls(urls, index + 1);
+              return Promise.reject('Not found - trying next URL');
+            }
+            
+            if (!response.ok) {
+              throw new Error(`Nie udało się pobrać SVG: ${response.status}`);
+            }
+            
+            // Logowanie nagłówków
+            if (response.headers && typeof response.headers.get === 'function') {
+              const contentType = response.headers.get('Content-Type');
+              console.log(`📊 UI: Content-Type: ${contentType}`);
+            }
+            
+            return response.text();
+          })
+          .then(svgContent => {
+            // Sprawdź czy treść jest poprawnym SVG
+            if (!svgContent || svgContent.trim().length === 0) {
+              console.error(`⚠️ UI: Pobrano pustą zawartość dla ikony ${icon.id}`);
+              // Spróbuj następny URL
+              tryFetchFromUrls(urls, index + 1);
+              return;
+            }
+            
+            // Sprawdź czy to faktycznie SVG
+            if (!svgContent.trim().startsWith('<svg')) {
+              console.error(`⚠️ UI: Pobrano nieprawidłowy format SVG dla ${icon.id}:`);
+              console.error(`Pierwsze 100 znaków: ${svgContent.substring(0, 100)}`);
+              // Spróbuj następny URL
+              tryFetchFromUrls(urls, index + 1);
+              return;
+            }
+            
+            // Logowanie fragmentu SVG
+            console.log(`📄 UI: Pobrano SVG dla ${icon.id} (pierwsze 50 znaków):`, svgContent.substring(0, 50));
+            
+            // Wstaw SVG do kontenera
+            container.innerHTML = svgContent;
+            
+            // Usuń klasę ładowania
+            container.classList.remove('loading');
+            
+            // Zastosuj stylizację do SVG
+            const svgElement = container.querySelector('svg');
+            if (svgElement) {
+              // Ustawienie wymiarów i kolorów
+              svgElement.setAttribute('width', '24');
+              svgElement.setAttribute('height', '24');
+              
+              // Dokładne stylizowanie SVG - obsługa wszystkich możliwych atrybutów kolorów
+              stylizeSvgElement(svgElement, state.color);
+              
+              console.log(`✅ UI: Ikona ${icon.id} (${currentUrl}) załadowana i ostylowana`);
+              container.classList.remove('icon-load-error');
+            } else {
+              console.warn(`⚠️ UI: SVG zostało wstawione, ale nie znaleziono elementu <svg> dla ${icon.id}`);
+              // Nie próbujemy następnego URL, bo zawartość jest poprawna, tylko brakuje elementu SVG
+            }
+          })
+          .catch(error => {
+            // Ignorujemy błędy dla 404, które są już obsługiwane powyżej
+            if (error === 'Not found - trying next URL') return;
+            
+            console.error(`❌ UI: Błąd podczas ładowania ikony ${icon.id} z URL ${currentUrl}:`, error.message);
+            
+            // Spróbuj następny URL
+            tryFetchFromUrls(urls, index + 1);
           });
-          console.log(`📊 UI: Pełne nagłówki dla ikony ${iconId}:`, headers);
-        }
-      } catch (e) {
-        console.log(`⚠️ UI: Nie można odczytać nagłówków dla ikony ${iconId}:`, e.message);
-      }
-    }
-
-    // Funkcja pomocnicza do sprawdzania zawartości SVG
-    function validateSvgContent(svgText, iconId) {
-      if (!svgText || !svgText.trim()) {
-        console.error(`⚠️ UI: Otrzymano pustą odpowiedź dla ikony ${iconId}!`);
-        return false;
       }
       
-      if (!svgText.trim().startsWith('<svg')) {
-        console.error(`⚠️ UI: Otrzymano niepoprawny format SVG dla ikony ${iconId}!`);
-        console.error(`⚠️ UI: Zawartość (pierwsze 100 znaków): ${svgText.substring(0, 100)}`);
-        return false;
+      // Funkcja do stylizowania elementów SVG
+      function stylizeSvgElement(svgElement, color) {
+        // Lista atrybutów, które mogą definiować kolor
+        const colorAttributes = [
+          'fill', 'stroke', 'stop-color', 'flood-color', 'lighting-color'
+        ];
+        
+        // Zasady stylowania
+        const shouldApplyColor = (el, attr) => {
+          const value = el.getAttribute(attr);
+          // Aplikuj kolor tylko jeśli atrybut nie istnieje lub ma wartość 'none' lub '#000000'
+          return !value || value === 'none' || value === '#000000' || value === 'black';
+        };
+        
+        // Ustawiamy główny kolor dla SVG
+        svgElement.setAttribute('fill', color);
+        
+        // Sprawdzamy wszystkie elementy wewnątrz SVG
+        const allElements = svgElement.querySelectorAll('*');
+        allElements.forEach(el => {
+          // Dla path, rect, circle, ellipse, polygon, polyline zawsze ustawiamy fill
+          if (['path', 'rect', 'circle', 'ellipse', 'polygon', 'polyline'].includes(el.tagName.toLowerCase())) {
+            if (shouldApplyColor(el, 'fill')) {
+              el.setAttribute('fill', color);
+            }
+          }
+          
+          // Dla stroke elements (line, polyline) ustawiamy stroke
+          if (['line', 'polyline'].includes(el.tagName.toLowerCase())) {
+            if (shouldApplyColor(el, 'stroke')) {
+              el.setAttribute('stroke', color);
+            }
+          }
+          
+          // Dla stop elementów w gradientach
+          if (el.tagName.toLowerCase() === 'stop') {
+            if (shouldApplyColor(el, 'stop-color')) {
+              el.setAttribute('stop-color', color);
+            }
+          }
+          
+          // Sprawdzamy wszystkie możliwe atrybuty kolorów
+          colorAttributes.forEach(attr => {
+            if (shouldApplyColor(el, attr)) {
+              el.setAttribute(attr, color);
+            }
+          });
+        });
+        
+        // Sprawdzamy style inline (np. style="fill: black;")
+        allElements.forEach(el => {
+          if (el.hasAttribute('style')) {
+            const style = el.getAttribute('style');
+            let newStyle = style;
+            
+            colorAttributes.forEach(attr => {
+              // Zastępujemy kolory w stylach inline
+              const regex = new RegExp(`${attr}:\\s*(none|#000000|black)`, 'gi');
+              newStyle = newStyle.replace(regex, `${attr}: ${color}`);
+            });
+            
+            if (newStyle !== style) {
+              el.setAttribute('style', newStyle);
+            }
+          }
+        });
       }
-      
-      console.log(`📊 UI: Poprawne SVG dla ikony ${iconId} (pierwsze 50 znaków): ${svgText.substring(0, 50)}...`);
-      return true;
-    }
-
-    // Funkcja pomocnicza do stosowania stylizacji do elementu SVG
-    function applyStylingToSvg(svgElement, color) {
-      // Ustawiamy wymiary
-      svgElement.setAttribute('width', '24');
-      svgElement.setAttribute('height', '24');
-      svgElement.setAttribute('fill', color);
-      
-      // Ustawiamy kolor dla wszystkich elementów wewnątrz SVG
-      const elements = svgElement.querySelectorAll('*');
-      elements.forEach(element => {
-        if (!element.getAttribute('fill') || element.getAttribute('fill') === 'none') {
-          element.setAttribute('fill', color);
-        }
-      });
-      
-      // Dodatkowo zaktualizuj wszystkie path
-      const paths = svgElement.querySelectorAll('path');
-      paths.forEach(path => {
-        path.setAttribute('fill', color);
-      });
-    }
-
-    // Funkcja wstawiająca awaryjną ikonę w przypadku błędu
-    function insertFallbackIcon(container) {
-      container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="${state.color}"/>
-      </svg>`;
-      console.log(`⚓ UI: Wstawiono awaryjną ikonę placeholder`);
     }
 
     // Update state of insert button

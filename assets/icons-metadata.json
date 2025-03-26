@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-03-26T18:57:54.537Z",
+  "lastUpdated": "2025-03-26T23:39:14.196Z",
   "totalCount": 14,
   "icons": [
     {
@@ -9,7 +9,7 @@
         "Finance"
       ],
       "tags": [],
-      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Finance/card-regular.svg"
+      "svgUrl": "https://localhost:3000/icons/Finance/card-regular.svg"
     },
     {
       "id": "cash-arrow-down-regular",
@@ -18,7 +18,7 @@
         "Finance"
       ],
       "tags": [],
-      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Finance/cash-arrow-down-regular.svg"
+      "svgUrl": "https://localhost:3000/icons/Finance/cash-arrow-down-regular.svg"
     },
     {
       "id": "cash-arrow-up-regular",
@@ -27,7 +27,7 @@
         "Finance"
       ],
       "tags": [],
-      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Finance/cash-arrow-up-regular.svg"
+      "svgUrl": "https://localhost:3000/icons/Finance/cash-arrow-up-regular.svg"
     },
     {
       "id": "cash-regular",
@@ -36,7 +36,7 @@
         "Finance"
       ],
       "tags": [],
-      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Finance/cash-regular.svg"
+      "svgUrl": "https://localhost:3000/icons/Finance/cash-regular.svg"
     },
     {
       "id": "cash-stack-regular",
@@ -45,7 +45,7 @@
         "Finance"
       ],
       "tags": [],
-      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Finance/cash-stack-regular.svg"
+      "svgUrl": "https://localhost:3000/icons/Finance/cash-stack-regular.svg"
     },
     {
       "id": "wallet-coin-regular",
@@ -54,7 +54,7 @@
         "Finance"
       ],
       "tags": [],
-      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Finance/wallet-coin-regular.svg"
+      "svgUrl": "https://localhost:3000/icons/Finance/wallet-coin-regular.svg"
     },
     {
       "id": "wallet-regular",
@@ -63,7 +63,7 @@
         "Finance"
       ],
       "tags": [],
-      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Finance/wallet-regular.svg"
+      "svgUrl": "https://localhost:3000/icons/Finance/wallet-regular.svg"
     },
     {
       "id": "home",
@@ -72,7 +72,7 @@
         "Interfejs"
       ],
       "tags": [],
-      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Interfejs/home.svg"
+      "svgUrl": "https://localhost:3000/icons/Interfejs/home.svg"
     },
     {
       "id": "search",
@@ -81,7 +81,7 @@
         "Interfejs"
       ],
       "tags": [],
-      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Interfejs/search.svg"
+      "svgUrl": "https://localhost:3000/icons/Interfejs/search.svg"
     },
     {
       "id": "settings",
@@ -90,7 +90,7 @@
         "Interfejs"
       ],
       "tags": [],
-      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Interfejs/settings.svg"
+      "svgUrl": "https://localhost:3000/icons/Interfejs/settings.svg"
     },
     {
       "id": "mail",
@@ -99,7 +99,7 @@
         "Komunikacja"
       ],
       "tags": [],
-      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Komunikacja/mail.svg"
+      "svgUrl": "https://localhost:3000/icons/Komunikacja/mail.svg"
     },
     {
       "id": "message",
@@ -108,7 +108,7 @@
         "Komunikacja"
       ],
       "tags": [],
-      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Komunikacja/message.svg"
+      "svgUrl": "https://localhost:3000/icons/Komunikacja/message.svg"
     },
     {
       "id": "pause",
@@ -117,7 +117,7 @@
         "Media"
       ],
       "tags": [],
-      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Media/pause.svg"
+      "svgUrl": "https://localhost:3000/icons/Media/pause.svg"
     },
     {
       "id": "play",
@@ -126,7 +126,7 @@
         "Media"
       ],
       "tags": [],
-      "svgUrl": "https://my-vercel-app.vercel.app/icons/icons/Media/play.svg"
+      "svgUrl": "https://localhost:3000/icons/Media/play.svg"
     }
   ]
 }
