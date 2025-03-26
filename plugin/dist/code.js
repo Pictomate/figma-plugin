@@ -42,26 +42,23 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 /**
  * Main plugin file - handles communication with Figma API
  */
 var types_1 = __webpack_require__(799);
-var icons_metadata_json_1 = __importDefault(__webpack_require__(897));
+var config_1 = __webpack_require__(800);
 /**
  * PRZEPŁYW DANYCH IKON W APLIKACJI:
- * 1. Plik generate-icons.js skanuje folder icons/ i generuje icons-metadata.json w głównym katalogu
- * 2. Podczas budowania pluginu, icons-metadata.json jest kopiowany do katalogu src/ przez webpack
- * 3. Plugin importuje metadane i używa ich do pobierania ikon SVG z określonego URL
- * 4. Metadane zawierają informacje o ikonach, kategoriach oraz pełne URL do plików SVG
+ * 1. Plik generate-icons.js skanuje folder assets/icons/ i generuje assets/icons-metadata.json
+ * 2. Plik assets/icons-metadata.json jest hostowany na Vercel
+ * 3. Plugin pobiera metadane z zewnętrznego URL (https://twoja-aplikacja.vercel.app/icons-metadata.json)
+ * 4. Na podstawie metadanych, plugin pobiera pliki SVG z określonych URL-i
  *
  * Aby zaktualizować ikony:
- * 1. Dodaj nowe pliki SVG do folderu icons/
- * 2. Uruchom `npm run generate-icons` aby zaktualizować icons-metadata.json
- * 3. Zbuduj i opublikuj plugin komendą `npm run build`
+ * 1. Dodaj nowe pliki SVG do folderu assets/icons/
+ * 2. Uruchom `npm run generate-icons` aby zaktualizować icons-metadata.json w folderze assets/
+ * 3. Zbuduj i opublikuj zmiany (np. przez Vercel)
  */
 /**
  * Konfiguracja pluginu
@@ -71,6 +68,7 @@ figma.skipInvisibleInstanceChildren = true;
  * Inicjalizacja pluginu
  */
 console.log('Plugin starting...');
+console.log('Icons metadata URL:', config_1.ICONS_METADATA_URL);
 /**
  * Ustawienia rozmiaru UI
  */
@@ -222,46 +220,89 @@ function insertIcons(icons, color) {
     });
 }
 /**
+ * Pobiera metadane ikon z zewnętrznego serwera
+ * @returns Promise z danymi o ikonach
+ */
+function fetchIconsMetadata() {
+    return __awaiter(this, void 0, void 0, function () {
+        var response, data, error_2;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 3, , 4]);
+                    console.log("Pobieranie metadanych ikon z: ".concat(config_1.ICONS_METADATA_URL));
+                    return [4 /*yield*/, fetch(config_1.ICONS_METADATA_URL)];
+                case 1:
+                    response = _a.sent();
+                    if (!response.ok) {
+                        throw new Error("B\u0142\u0105d pobierania metadanych: ".concat(response.status, " ").concat(response.statusText));
+                    }
+                    return [4 /*yield*/, response.json()];
+                case 2:
+                    data = _a.sent();
+                    console.log('Pobrano metadane ikon:', {
+                        lastUpdated: data.lastUpdated,
+                        totalCount: data.totalCount,
+                        categories: data.categories ? data.categories.length : 0,
+                        icons: data.icons ? data.icons.length : 0
+                    });
+                    return [2 /*return*/, data];
+                case 3:
+                    error_2 = _a.sent();
+                    console.error('Błąd podczas pobierania metadanych ikon:', error_2);
+                    throw error_2;
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+/**
  * Nasłuchiwanie wiadomości z UI
  */
 figma.ui.onmessage = function (msg) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, icons, categories, icons, color, error_2;
+    var _a, iconsMetadata, icons, categories, error_3, icons, color, error_4;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
                 _a = msg.type;
                 switch (_a) {
                     case types_1.MessageType.UI_READY: return [3 /*break*/, 1];
-                    case types_1.MessageType.INSERT_ICONS: return [3 /*break*/, 2];
+                    case types_1.MessageType.INSERT_ICONS: return [3 /*break*/, 6];
                 }
-                return [3 /*break*/, 7];
+                return [3 /*break*/, 11];
             case 1:
                 console.log('UI is ready, sending initial data');
-                try {
-                    icons = icons_metadata_json_1.default.icons;
-                    categories = icons_metadata_json_1.default.categories;
-                    // Wyślij dane do UI
-                    figma.ui.postMessage({
-                        type: types_1.MessageType.INIT_DATA,
-                        icons: icons,
-                        categories: categories
-                    });
-                }
-                catch (error) {
-                    console.error('Error initializing plugin:', error);
-                    figma.notify('Error initializing plugin', { error: true });
-                }
-                return [3 /*break*/, 8];
+                _b.label = 2;
             case 2:
-                console.log('Inserting icons:', msg.icons);
-                _b.label = 3;
+                _b.trys.push([2, 4, , 5]);
+                return [4 /*yield*/, fetchIconsMetadata()];
             case 3:
-                _b.trys.push([3, 5, , 6]);
+                iconsMetadata = _b.sent();
+                icons = iconsMetadata.icons;
+                categories = iconsMetadata.categories || [];
+                // Wyślij dane do UI
+                figma.ui.postMessage({
+                    type: types_1.MessageType.INIT_DATA,
+                    icons: icons,
+                    categories: categories
+                });
+                return [3 /*break*/, 5];
+            case 4:
+                error_3 = _b.sent();
+                console.error('Error initializing plugin:', error_3);
+                figma.notify('Error initializing plugin', { error: true });
+                return [3 /*break*/, 5];
+            case 5: return [3 /*break*/, 12];
+            case 6:
+                console.log('Inserting icons:', msg.icons);
+                _b.label = 7;
+            case 7:
+                _b.trys.push([7, 9, , 10]);
                 icons = msg.icons;
                 color = msg.color || '#000000';
                 // Wstaw ikony
                 return [4 /*yield*/, insertIcons(icons, color)];
-            case 4:
+            case 8:
                 // Wstaw ikony
                 _b.sent();
                 // Powiadom UI o sukcesie
@@ -269,23 +310,23 @@ figma.ui.onmessage = function (msg) { return __awaiter(void 0, void 0, void 0, f
                     type: types_1.MessageType.ICONS_INSERTED,
                     success: true
                 });
-                return [3 /*break*/, 6];
-            case 5:
-                error_2 = _b.sent();
+                return [3 /*break*/, 10];
+            case 9:
+                error_4 = _b.sent();
                 // Obsługa błędów
-                console.error('Error inserting icons:', error_2);
+                console.error('Error inserting icons:', error_4);
                 // Powiadom UI o błędzie
                 figma.ui.postMessage({
                     type: types_1.MessageType.ICONS_INSERTED,
                     success: false,
-                    details: error_2 instanceof Error ? error_2.message : 'Unknown error'
+                    details: error_4 instanceof Error ? error_4.message : 'Unknown error'
                 });
-                return [3 /*break*/, 6];
-            case 6: return [3 /*break*/, 8];
-            case 7:
+                return [3 /*break*/, 10];
+            case 10: return [3 /*break*/, 12];
+            case 11:
                 console.log('Unknown message type:', msg.type);
-                _b.label = 8;
-            case 8: return [2 /*return*/];
+                _b.label = 12;
+            case 12: return [2 /*return*/];
         }
     });
 }); };
@@ -323,10 +364,38 @@ var MessageType;
 
 /***/ }),
 
-/***/ 897:
-/***/ (function(module) {
+/***/ 800:
+/***/ (function(__unused_webpack_module, exports) {
 
-module.exports = /*#__PURE__*/JSON.parse('{"lastUpdated":"2024-03-25T12:00:00Z","totalCount":7,"categories":["Interfejs","Media","Komunikacja","Finanse","Biznes","Transport","Edukacja","Zdrowie","Sport","Pogoda","Design","Ecommerce"],"icons":[{"id":"icon-001","name":"Home","categories":["Interfejs"],"tags":["dom","strona główna","dashboard","menu"],"svgUrl":"https://figma-plugin-indol.vercel.app/icons/Interfejs/home.svg","premium":false},{"id":"icon-002","name":"Search","categories":["Interfejs"],"tags":["szukaj","lupa","wyszukiwanie"],"svgUrl":"https://figma-plugin-indol.vercel.app/icons/Interfejs/search.svg","premium":false},{"id":"icon-003","name":"Settings","categories":["Interfejs"],"tags":["ustawienia","konfiguracja","opcje","preferencje"],"svgUrl":"https://figma-plugin-indol.vercel.app/icons/Interfejs/settings.svg","premium":false},{"id":"icon-004","name":"Play","categories":["Media"],"tags":["odtwarzanie","wideo","film","start"],"svgUrl":"https://figma-plugin-indol.vercel.app/icons/Media/play.svg","premium":false},{"id":"icon-005","name":"Pause","categories":["Media"],"tags":["pauza","przerwa","wideo","film"],"svgUrl":"https://figma-plugin-indol.vercel.app/icons/Media/pause.svg","premium":false},{"id":"icon-006","name":"Message","categories":["Komunikacja"],"tags":["wiadomość","czat","komunikacja","rozmowa"],"svgUrl":"https://figma-plugin-indol.vercel.app/icons/Komunikacja/message.svg","premium":false},{"id":"icon-007","name":"Mail","categories":["Komunikacja"],"tags":["email","poczta","wiadomość","koperta"],"svgUrl":"https://figma-plugin-indol.vercel.app/icons/Komunikacja/mail.svg","premium":false}]}');
+
+/**
+ * Konfiguracja pluginu ikon dla Figma
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DEFAULT_ICON_COLOR = exports.DEFAULT_ICON_SIZE = exports.INITIAL_LOAD_LIMIT = exports.ICONS_PER_PAGE = exports.ICONS_METADATA_URL = exports.BASE_ICON_URL = exports.IS_DEVELOPMENT = void 0;
+// Adresy URL dla wersji produkcyjnej i developerskiej
+var DEV_ICON_URL = 'http://localhost:3000/icons';
+var PROD_ICON_URL = 'https://figma-icon-plugin.vercel.app/icons';
+var DEV_METADATA_URL = 'http://localhost:3000/icons-metadata.json';
+var PROD_METADATA_URL = 'https://figma-icon-plugin.vercel.app/icons-metadata.json';
+// Wskazuje, czy plugin działa w trybie developerskim czy produkcyjnym
+exports.IS_DEVELOPMENT = false;
+// Podstawowy URL dla zasobów ikon
+exports.BASE_ICON_URL = exports.IS_DEVELOPMENT ? DEV_ICON_URL : PROD_ICON_URL;
+// URL do pliku JSON z metadanymi ikon
+exports.ICONS_METADATA_URL = exports.IS_DEVELOPMENT ? DEV_METADATA_URL : PROD_METADATA_URL;
+/**
+ * INFORMACJA: Po uruchomieniu `npm run generate-icons`, metadane są generowane w folderze assets/ i hostowane na Vercel.
+ * Plugin zawsze pobiera najnowsze metadane i ikony z adresu URL określonego w ICONS_METADATA_URL,
+ * co umożliwia aktualizację ikon bez konieczności aktualizacji samego pluginu Figma.
+ */
+// Ustawienia dotyczące paginacji i lazy loadingu
+exports.ICONS_PER_PAGE = 100;
+exports.INITIAL_LOAD_LIMIT = 50;
+// Domyślne ustawienia personalizacji ikon
+exports.DEFAULT_ICON_SIZE = 24;
+exports.DEFAULT_ICON_COLOR = '#000000';
+
 
 /***/ })
 
