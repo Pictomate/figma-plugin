@@ -10,7 +10,15 @@
         },
         {
           "key": "Access-Control-Allow-Methods",
-          "value": "GET, OPTIONS"
+          "value": "GET, HEAD, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Origin, X-Requested-With, Content-Type, Accept, Range, Cache-Control"
+        },
+        {
+          "key": "Access-Control-Expose-Headers",
+          "value": "Content-Length, Content-Range"
         },
         {
           "key": "Content-Type",
@@ -31,11 +39,11 @@
         },
         {
           "key": "Access-Control-Allow-Methods",
-          "value": "GET, OPTIONS"
+          "value": "GET, OPTIONS, HEAD"
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "X-Requested-With, Content-Type, Accept"
+          "value": "X-Requested-With, Content-Type, Accept, Cache-Control, Range"
         },
         {
           "key": "Cache-Control",
@@ -56,7 +64,11 @@
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "X-Requested-With, Content-Type, Accept"
+          "value": "X-Requested-With, Content-Type, Accept, Range, Cache-Control"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/json; charset=utf-8"
         },
         {
           "key": "Cache-Control",

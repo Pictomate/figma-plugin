@@ -956,7 +956,7 @@
         console.error('⚠️ Nieprawidłowy obiekt ikony:', icon);
         return;
       }
-
+      
       // Dodaj klasę ładowania i element animacji
       container.innerHTML = '';
       const loadingIndicator = document.createElement('div');
@@ -1110,75 +1110,139 @@
             tryFetchFromUrls(urls, index + 1);
           });
       }
-      
-      // Funkcja do stylizowania elementów SVG
-      function stylizeSvgElement(svgElement, color) {
-        // Lista atrybutów, które mogą definiować kolor
-        const colorAttributes = [
-          'fill', 'stroke', 'stop-color', 'flood-color', 'lighting-color'
-        ];
-        
-        // Zasady stylowania
-        const shouldApplyColor = (el, attr) => {
-          const value = el.getAttribute(attr);
-          // Aplikuj kolor tylko jeśli atrybut nie istnieje lub ma wartość 'none' lub '#000000'
-          return !value || value === 'none' || value === '#000000' || value === 'black';
-        };
-        
-        // Ustawiamy główny kolor dla SVG
-        svgElement.setAttribute('fill', color);
-        
-        // Sprawdzamy wszystkie elementy wewnątrz SVG
-        const allElements = svgElement.querySelectorAll('*');
-        allElements.forEach(el => {
-          // Dla path, rect, circle, ellipse, polygon, polyline zawsze ustawiamy fill
-          if (['path', 'rect', 'circle', 'ellipse', 'polygon', 'polyline'].includes(el.tagName.toLowerCase())) {
-            if (shouldApplyColor(el, 'fill')) {
-              el.setAttribute('fill', color);
-            }
-          }
-          
-          // Dla stroke elements (line, polyline) ustawiamy stroke
-          if (['line', 'polyline'].includes(el.tagName.toLowerCase())) {
-            if (shouldApplyColor(el, 'stroke')) {
-              el.setAttribute('stroke', color);
-            }
-          }
-          
-          // Dla stop elementów w gradientach
-          if (el.tagName.toLowerCase() === 'stop') {
-            if (shouldApplyColor(el, 'stop-color')) {
-              el.setAttribute('stop-color', color);
-            }
-          }
-          
-          // Sprawdzamy wszystkie możliwe atrybuty kolorów
-          colorAttributes.forEach(attr => {
-            if (shouldApplyColor(el, attr)) {
-              el.setAttribute(attr, color);
-            }
-          });
-        });
-        
-        // Sprawdzamy style inline (np. style="fill: black;")
-        allElements.forEach(el => {
-          if (el.hasAttribute('style')) {
-            const style = el.getAttribute('style');
-            let newStyle = style;
-            
-            colorAttributes.forEach(attr => {
-              // Zastępujemy kolory w stylach inline
-              const regex = new RegExp(`${attr}:\\s*(none|#000000|black)`, 'gi');
-              newStyle = newStyle.replace(regex, `${attr}: ${color}`);
-            });
-            
-            if (newStyle !== style) {
-              el.setAttribute('style', newStyle);
-            }
-          }
-        });
-      }
     }
+
+    // Funkcja do stylizowania elementów SVG
+    function stylizeSvgElement(svgElement, color) {
+      // Lista atrybutów, które mogą definiować kolor
+      const colorAttributes = [
+        'fill', 'stroke', 'stop-color', 'flood-color', 'lighting-color'
+      ];
+      
+      // Zasady stylowania
+      const shouldApplyColor = (el, attr) => {
+        const value = el.getAttribute(attr);
+        // Aplikuj kolor tylko jeśli atrybut nie istnieje lub ma wartość 'none' lub '#000000'
+        return !value || value === 'none' || value === '#000000' || value === 'black';
+      };
+      
+      // Ustawiamy główny kolor dla SVG
+      svgElement.setAttribute('fill', color);
+      
+      // Sprawdzamy wszystkie elementy wewnątrz SVG
+      const allElements = svgElement.querySelectorAll('*');
+      allElements.forEach(el => {
+        // Dla path, rect, circle, ellipse, polygon, polyline zawsze ustawiamy fill
+        if (['path', 'rect', 'circle', 'ellipse', 'polygon', 'polyline'].includes(el.tagName.toLowerCase())) {
+          if (shouldApplyColor(el, 'fill')) {
+            el.setAttribute('fill', color);
+          }
+        }
+        
+        // Dla stroke elements (line, polyline) ustawiamy stroke
+        if (['line', 'polyline'].includes(el.tagName.toLowerCase())) {
+          if (shouldApplyColor(el, 'stroke')) {
+            el.setAttribute('stroke', color);
+          }
+        }
+        
+        // Dla stop elementów w gradientach
+        if (el.tagName.toLowerCase() === 'stop') {
+          if (shouldApplyColor(el, 'stop-color')) {
+            el.setAttribute('stop-color', color);
+          }
+        }
+        
+        // Sprawdzamy wszystkie możliwe atrybuty kolorów
+        colorAttributes.forEach(attr => {
+          if (shouldApplyColor(el, attr)) {
+            el.setAttribute(attr, color);
+          }
+        });
+      });
+      
+      // Sprawdzamy style inline (np. style="fill: black;")
+      allElements.forEach(el => {
+        if (el.hasAttribute('style')) {
+          const style = el.getAttribute('style');
+          let newStyle = style;
+          
+          colorAttributes.forEach(attr => {
+            // Zastępujemy kolory w stylach inline
+            const regex = new RegExp(`${attr}:\\s*(none|#000000|black)`, 'gi');
+            newStyle = newStyle.replace(regex, `${attr}: ${color}`);
+          });
+          
+          if (newStyle !== style) {
+            el.setAttribute('style', newStyle);
+          }
+        }
+      });
+    }
+
+    // Funkcja diagnostyczna - pozwala testować dostępność plików SVG bezpośrednio z konsoli
+    window.testSvgPath = function(path) {
+      console.log(`🔍 TEST SVG: Sprawdzam dostępność pliku ${path}`);
+      
+      fetch(path, {
+        method: 'GET',
+        cache: 'no-store',
+        headers: { 'Accept': 'image/svg+xml' }
+      })
+      .then(response => {
+        console.log(`📊 TEST SVG: Status: ${response.status} ${response.statusText}`);
+        console.log(`📊 TEST SVG: URL: ${path}`);
+        
+        if (response.headers) {
+          const contentType = response.headers.get('Content-Type');
+          console.log(`📊 TEST SVG: Content-Type: ${contentType}`);
+          const corsHeader = response.headers.get('Access-Control-Allow-Origin');
+          console.log(`📊 TEST SVG: CORS: ${corsHeader}`);
+        }
+        
+        if (!response.ok) {
+          throw new Error(`Status: ${response.status}`);
+        }
+        
+        return response.text();
+      })
+      .then(text => {
+        console.log(`✅ TEST SVG: Pobrano pomyślnie`);
+        console.log(`📄 TEST SVG: Zawartość (fragment): ${text.substring(0, 150)}`);
+      })
+      .catch(error => {
+        console.error(`❌ TEST SVG: Błąd: ${error.message}`);
+      });
+    };
+
+    /**
+     * PROCEDURA AKTUALIZACJI PLUGINU W FIGMA:
+     * 
+     * 1. Zamknij plugin w Figma
+     * 2. Uruchom w konsoli:
+     *    npm run build
+     * 3. W Figma, przejdź do Menu > Plugins > Development > Remove Development Plugin
+     *    i usuń stary plugin
+     * 4. Następnie przejdź do Menu > Plugins > Development > Import plugin from manifest
+     *    i wybierz plik manifest.json z folderu dist
+     * 5. Uruchom plugin i sprawdź w konsoli (Menu > Plugins > Development > Show/Hide Console)
+     *    czy pojawia się komunikat "Plugin version: 1.1.0" z aktualną datą
+     * 
+     * ROZWIĄZYWANIE PROBLEMÓW Z SERWEREM:
+     * 
+     * 1. Upewnij się, że serwer Vercel jest prawidłowo skonfigurowany i dostępny
+     * 2. Sprawdź poprawność pliku vercel.json i nagłówków CORS
+     * 3. Wejdź na https://figma-plugin-indol.vercel.app/icons-metadata.json
+     *    bezpośrednio w przeglądarce i upewnij się, że serwer odpowiada
+     * 4. Uruchom funkcję testSvgPath() w konsoli Figmy aby przetestować dostępność plików
+     */
+
+    // Dodaj informację o wersji pluginu
+    console.log(`📦 Plugin version: 1.1.0, build date: ${new Date().toISOString().split('T')[0]}`);
+    console.log('🔧 Diagnostyka pluginu - Uruchom poniższe testy w konsoli Figmy aby sprawdzić dostępność plików SVG:');
+    console.log('testSvgPath("https://figma-plugin-indol.vercel.app/icons/Finance/card-regular.svg")');
+    console.log('testSvgPath("https://figma-plugin-indol.vercel.app/icons/card-regular.svg")');
+    console.log('testSvgPath("https://figma-plugin-indol.vercel.app/icons-metadata.json")');
 
     // Update state of insert button
     function updateInsertButton() {
